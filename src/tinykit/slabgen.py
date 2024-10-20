@@ -8,6 +8,18 @@ warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 warnings.filterwarnings("ignore", message="POTCAR data")
 warnings.filterwarnings("ignore", message="Overriding the POTCAR functional")
 
+def parse_hkl(value):
+    # If a single integer is passed, convert to a tuple of that value repeated three times
+    try:
+        return (int(value), int(value), int(value))
+    except ValueError:
+        # If a list of integers is passed, convert to tuple
+        hkl_list = [int(i) for i in value.split(',')]
+        if len(hkl_list) != 3:
+            raise argparse.ArgumentTypeError("hkl must be either a single integer or a list of three integers.")
+        return tuple(hkl_list)
+
+
 # Define argument parser
 def parse_args():
     parser = argparse.ArgumentParser(description="Generate and plot slabs for surface analysis.")
@@ -15,8 +27,8 @@ def parse_args():
     # Command-line arguments
     parser.add_argument('structure', type=str,
                         help='Path to the structure file')
-    parser.add_argument('--hkl', type=int, nargs=3, default=(1, 1, 1),
-                        help='Miller indices for the surface (default: (1, 1, 1))')
+    parser.add_argument('--hkl', type=parse_hkl, default=1,
+                        help='Miller indices for the surface (default: max index 1)')
     parser.add_argument('--thicknesses', type=float, nargs='+', default=[12],
                         help='Slab thicknesses to generate (default: [12])')
     parser.add_argument('--vacuums', type=float, nargs='+', default=[15],
