@@ -14,6 +14,7 @@ import argparse
 
 molecules_json = Path(__file__).parent / "molecules.json"
 molecules = json.loads(molecules_json.read_text())
+molecules = {key: Molecule.from_dict(value) for key, value in molecules.items()}
 
 kpoints = Kpoints.gamma_automatic((5,5,1), shift=(0,0,0))
 
