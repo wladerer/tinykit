@@ -21,6 +21,7 @@ dependencies = [
 [project.scripts]
 slabvis = "tinkyit.slabviz:main"
 adsorb = "tinykit.adsorb:main"
+slabgen = "tinykit.slabgen:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]
