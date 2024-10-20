@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+src/tinykit/adsorb.py
+src/tinykit/slabviz.py
+src/tinykit.egg-info/PKG-INFO
+src/tinykit.egg-info/SOURCES.txt
+src/tinykit.egg-info/dependency_links.txt
+src/tinykit.egg-info/entry_points.txt
+src/tinykit.egg-info/requires.txt
+src/tinykit.egg-info/top_level.txt

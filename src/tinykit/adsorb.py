@@ -1,4 +1,5 @@
 import os 
+import json
 import numpy as np 
 
 from pathlib import Path
@@ -11,30 +12,8 @@ from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 import argparse
 
 
-H = Molecule("H", [[0, 0, 0]])
-O = Molecule("O", [[0, 0, 0]])
-CO = Molecule(["C","O"], [[0, 0, 0], [0, 0, 1.2]])
-N = Molecule("N", [[0, 0, 0]])
-NO = Molecule(["N","O"], [[0, 0, 0], [0, 0, 1.2]])
-OH = Molecule(["O","H"], [[0, 0, 0], [0, 0, 1.2]])
-CH = Molecule.from_file('mols/CH.xyz')
-CH2 = Molecule.from_file('mols/CH2.xyz')
-CH3 = Molecule(["C","H","H","H"], [[0, 0, 0], [0, 0, 1.2], [0, 1.2, 0], [1.2, 0, 0]])
-CH4 = Molecule.from_file('mols/CH4.xyz')
-
-molecules = {
-    "H": H,
-    "CH": CH,
-    "CH2": CH2,
-    "CH3": CH3,
-    "CH4": CH4,
-    "N": N,
-    "O": O,
-    "CO": CO,
-    "NO": NO,
-    "OH": OH
-}
-
+molecules_json = Path(__file__).parent / "molecules.json"
+molecules = json.loads(molecules_json.read_text())
 
 kpoints = Kpoints.gamma_automatic((5,5,1), shift=(0,0,0))
 

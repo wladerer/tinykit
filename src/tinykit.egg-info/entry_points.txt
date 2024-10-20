@@ -1,0 +1,3 @@
+[console_scripts]
+adsorb = tinykit.adsorb:main
+slabvis = tinkyit.slabviz:main

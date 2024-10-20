@@ -1,0 +1,460 @@
+{
+    "H": {
+        "@module": "pymatgen.core.structure",
+        "@class": "Molecule",
+        "charge": 0.0,
+        "spin_multiplicity": 2,
+        "sites": [
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "properties": {},
+                "label": "H"
+            }
+        ],
+        "properties": {}
+    },
+    "CH": {
+        "@module": "pymatgen.core.structure",
+        "@class": "Molecule",
+        "charge": 0,
+        "spin_multiplicity": 2,
+        "sites": [
+            {
+                "name": "C",
+                "species": [
+                    {
+                        "element": "C",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    7.122826,
+                    4.112365,
+                    19.956389
+                ],
+                "properties": {},
+                "label": "C"
+            },
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    7.122826,
+                    4.112365,
+                    21.054152
+                ],
+                "properties": {},
+                "label": "H"
+            }
+        ],
+        "properties": {}
+    },
+    "CH2": {
+        "@module": "pymatgen.core.structure",
+        "@class": "Molecule",
+        "charge": 0,
+        "spin_multiplicity": 1,
+        "sites": [
+            {
+                "name": "C",
+                "species": [
+                    {
+                        "element": "C",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    6.485747,
+                    3.692681,
+                    20.341809
+                ],
+                "properties": {},
+                "label": "C"
+            },
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    5.735814,
+                    3.189244,
+                    20.96778
+                ],
+                "properties": {},
+                "label": "H"
+            },
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    7.227304,
+                    4.180287,
+                    20.981677
+                ],
+                "properties": {},
+                "label": "H"
+            }
+        ],
+        "properties": {}
+    },
+    "CH3": {
+        "@module": "pymatgen.core.structure",
+        "@class": "Molecule",
+        "charge": 0.0,
+        "spin_multiplicity": 2,
+        "sites": [
+            {
+                "name": "C",
+                "species": [
+                    {
+                        "element": "C",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "properties": {},
+                "label": "C"
+            },
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    1.2
+                ],
+                "properties": {},
+                "label": "H"
+            },
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    1.2,
+                    0.0
+                ],
+                "properties": {},
+                "label": "H"
+            },
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    1.2,
+                    0.0,
+                    0.0
+                ],
+                "properties": {},
+                "label": "H"
+            }
+        ],
+        "properties": {}
+    },
+    "CH4": {
+        "@module": "pymatgen.core.structure",
+        "@class": "Molecule",
+        "charge": 0,
+        "spin_multiplicity": 1,
+        "sites": [
+            {
+                "name": "C",
+                "species": [
+                    {
+                        "element": "C",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    7.122826,
+                    4.112365,
+                    22.437875
+                ],
+                "properties": {},
+                "label": "C"
+            },
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    7.122826,
+                    4.112365,
+                    23.53387
+                ],
+                "properties": {},
+                "label": "H"
+            },
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    8.054927,
+                    4.552958,
+                    22.065109
+                ],
+                "properties": {},
+                "label": "H"
+            },
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    7.038339,
+                    3.084851,
+                    22.065109
+                ],
+                "properties": {},
+                "label": "H"
+            },
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    6.275211,
+                    4.699287,
+                    22.065109
+                ],
+                "properties": {},
+                "label": "H"
+            }
+        ],
+        "properties": {}
+    },
+    "N": {
+        "@module": "pymatgen.core.structure",
+        "@class": "Molecule",
+        "charge": 0.0,
+        "spin_multiplicity": 2,
+        "sites": [
+            {
+                "name": "N",
+                "species": [
+                    {
+                        "element": "N",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "properties": {},
+                "label": "N"
+            }
+        ],
+        "properties": {}
+    },
+    "O": {
+        "@module": "pymatgen.core.structure",
+        "@class": "Molecule",
+        "charge": 0.0,
+        "spin_multiplicity": 1,
+        "sites": [
+            {
+                "name": "O",
+                "species": [
+                    {
+                        "element": "O",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "properties": {},
+                "label": "O"
+            }
+        ],
+        "properties": {}
+    },
+    "CO": {
+        "@module": "pymatgen.core.structure",
+        "@class": "Molecule",
+        "charge": 0.0,
+        "spin_multiplicity": 1,
+        "sites": [
+            {
+                "name": "C",
+                "species": [
+                    {
+                        "element": "C",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "properties": {},
+                "label": "C"
+            },
+            {
+                "name": "O",
+                "species": [
+                    {
+                        "element": "O",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    1.2
+                ],
+                "properties": {},
+                "label": "O"
+            }
+        ],
+        "properties": {}
+    },
+    "NO": {
+        "@module": "pymatgen.core.structure",
+        "@class": "Molecule",
+        "charge": 0.0,
+        "spin_multiplicity": 2,
+        "sites": [
+            {
+                "name": "N",
+                "species": [
+                    {
+                        "element": "N",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "properties": {},
+                "label": "N"
+            },
+            {
+                "name": "O",
+                "species": [
+                    {
+                        "element": "O",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    1.2
+                ],
+                "properties": {},
+                "label": "O"
+            }
+        ],
+        "properties": {}
+    },
+    "OH": {
+        "@module": "pymatgen.core.structure",
+        "@class": "Molecule",
+        "charge": 0.0,
+        "spin_multiplicity": 2,
+        "sites": [
+            {
+                "name": "O",
+                "species": [
+                    {
+                        "element": "O",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "properties": {},
+                "label": "O"
+            },
+            {
+                "name": "H",
+                "species": [
+                    {
+                        "element": "H",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    1.2
+                ],
+                "properties": {},
+                "label": "H"
+            }
+        ],
+        "properties": {}
+    }
+}

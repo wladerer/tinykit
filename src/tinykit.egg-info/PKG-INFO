@@ -1,0 +1,18 @@
+Metadata-Version: 2.1
+Name: tinykit
+Version: 0.0.1
+Summary: A Python package to simplify preapring and analyzing VASP calculations
+Author-email: William Laderer <wtladerer@gmail.com>
+Project-URL: Issues, https://github.com/wladerer/tinykit/issues
+Classifier: Intended Audience :: Science/Research
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Scientific/Engineering :: Physics
+Classifier: Topic :: Scientific/Engineering :: Chemistry
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy
+Requires-Dist: ase
+
+# slabvis
+
+This is used to make reproducible renderings of slabs
