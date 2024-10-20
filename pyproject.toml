@@ -1,0 +1,29 @@
+[project]
+name = "tinykit"
+version = "0.0.1"
+description = "A Python package to simplify preapring and analyzing VASP calculations"
+authors = [
+    { name="William Laderer", email="wtladerer@gmail.com"},
+]
+readme = "README.md"
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+]
+
+dependencies = [
+    "numpy",
+    "ase",
+]
+
+[project.scripts]
+slabvis = "tinkyit.slabviz:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+Issues = "https://github.com/wladerer/tinykit/issues"
