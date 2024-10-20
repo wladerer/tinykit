@@ -94,7 +94,7 @@ def write_directories(structures: list[Structure], directory: str) -> None:
     return None
 
 
-if __name__ == "__main__":
+def main():
     #create an argparser to get structure from file and molecule from command line
     parser = argparse.ArgumentParser(description="Generate adsorbed structures")
     parser.add_argument("structure", type=str, help="Path to structure file")
@@ -119,16 +119,5 @@ if __name__ == "__main__":
     print(f"Generated {len(adsorbed_structures)} adsorbed structures")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    main()
