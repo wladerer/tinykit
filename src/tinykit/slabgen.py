@@ -51,7 +51,7 @@ def main():
     # Generate slabs
     slabs_dict = generate_slabs(
         structure=args.structure,
-        hkl=tuple(args.hkl),
+        hkl=args.hkl,
         thicknesses=args.thicknesses,
         vacuums=args.vacuums,
         make_input_files=args.make_input_files,
