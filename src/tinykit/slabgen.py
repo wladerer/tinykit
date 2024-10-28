@@ -26,6 +26,7 @@ def parse_args():
                         help='Number of layers to relax (default: 3)')
     parser.add_argument('--config_dict', type=str, default='pe_relax',
                         help='Configuration dictionary for slab generation (default: pe_relax)')
+    parser.add_argument('-a', '--allow-asymmetric', action='store_true')
     
     return parser.parse_args()
 
@@ -43,7 +44,7 @@ def main():
         layers_to_relax=args.layers_to_relax,
         save_slabs=True,
         config_dict=args.config_dict,
-        is_symmetric=True
+        is_symmetric=False if args.allow_asymmetric else True
     )
 
 
