@@ -56,7 +56,7 @@ def main():
 
     if args.input.endswith('CONTCAR'):
         slab = read(args.input, index=-1)
-    elif args.input_file.endswith('vasprun.xml'):
+    elif args.input.endswith('vasprun.xml'):
         slab = read(args.input, index=-1)
     else:
         print("Error: Input file must be a CONTCAR or vasprun.xml.")
