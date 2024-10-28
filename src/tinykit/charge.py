@@ -68,6 +68,7 @@ def parse_args():
     parser.add_argument('--start', type=float, default=0.1,)
     parser.add_argument('--stop', type=float, default=1.1)
     parser.add_argument('--kpoints', type=int, nargs=3, default=[4, 4, 1])
+    parser.add_argument('--dipole', action='store_true')
     
     return parser.parse_args()
 
@@ -79,6 +80,15 @@ def main():
     structure = Structure.from_file(args.structure)
     kpoints = Kpoints(kpts=args.kpoints)
     nelects = np.arange(args.start, args.stop, args.step)
+
+    if args.dipole:
+        base_incar_dict["IDIPOL"] = 3
+        base_incar_dict["LDIPOL"] = True
+
+        #get center of mass of the structure    
+        weights = [site.species.weight for site in structure.sites]
+        center_of_mass = np.average(structure.frac_coords, weights=weights, axis=0)
+        base_incar_dict["DIPOL"] = f"{center_of_mass[0]:.2f} {center_of_mass[1]:.2f} {center_of_mass[2]:.2f}"
 
     write_directories(structure, nelects, kpoints, "ChargedInputs")
 
