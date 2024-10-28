@@ -83,7 +83,6 @@ def main():
 
     if args.dipole:
         base_incar_dict["IDIPOL"] = 3
-        base_incar_dict["LDIPOL"] = True
 
         #get center of mass of the structure    
         weights = [site.species.weight for site in structure.sites]
