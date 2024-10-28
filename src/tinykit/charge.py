@@ -42,6 +42,9 @@ def write_directories(structure: Structure, nelects: list[float], kpoints: Kpoin
 
         #create poscar from structure
         poscar = Poscar(structure)
+        site_symbols = poscar.site_symbols
+        #update K to K_pv
+        site_symbols = [site_symbol.replace("K", "K_pv") for site_symbol in site_symbols]
         potcar = Potcar(symbols=poscar.site_symbols, functional="PBE")
         #update incar_dict with NELECT
         incar_dict = base_incar_dict.copy()
