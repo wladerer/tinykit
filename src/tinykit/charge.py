@@ -26,7 +26,7 @@ base_incar_dict = {
     "LREAL": "Auto",
     "LVHAR": True,
     "LWAVE": False,
-    "NELM": 100,
+    "NELM": 200,
     "NEDOS": 3001,
     "PREC": "Accurate",
     "SIGMA": 0.02,
