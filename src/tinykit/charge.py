@@ -14,6 +14,7 @@ base_incar_dict = {
     "ENCUT": 500,
     "ISMEAR": 0,
     "KPAR": 4,
+    "LAECHG": True,
     "LASPH": True,
     "LCHARG": True,
     "LMAXMIX": 6,
