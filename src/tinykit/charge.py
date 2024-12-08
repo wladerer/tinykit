@@ -13,7 +13,7 @@ base_incar_dict = {
     "EDIFFG": -0.01,
     "ENCUT": 500,
     "ISMEAR": 0,
-    "KPAR": 4,
+    "KPAR": 8,
     "LAECHG": True,
     "LASPH": True,
     "LCHARG": True,
@@ -27,8 +27,8 @@ base_incar_dict = {
     "PREC": "Accurate",
     "SIGMA": 0.02,
     "NCORE": 128,
-    "EMIN": -10,
-    "EMAX": 8,
+    "EMIN": 10,
+    "EMAX": -8,
 }
 
 def write_directories(structure: Structure, nelects: list[float], kpoints: Kpoints, directory: str) -> None:
