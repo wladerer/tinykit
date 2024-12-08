@@ -12,13 +12,8 @@ base_incar_dict = {
     "EDIFF": 1e-06,
     "EDIFFG": -0.01,
     "ENCUT": 500,
-    "GGA": "Pe",
-    "IBRION": 2,
     "ISMEAR": 0,
-    "ISYM": 2,
-    "IVDW": 4,
-    "IWAVPR": 1,
-    "KPAR": 16,
+    "KPAR": 4,
     "LASPH": True,
     "LCHARG": True,
     "LMAXMIX": 6,
@@ -27,10 +22,12 @@ base_incar_dict = {
     "LVHAR": True,
     "LWAVE": False,
     "NELM": 200,
-    "NEDOS": 3001,
+    "NEDOS": 6001,
     "PREC": "Accurate",
     "SIGMA": 0.02,
-    "NCORE": 64,
+    "NCORE": 128,
+    "EMIN": -10,
+    "EMAX": 8,
 }
 
 def write_directories(structure: Structure, nelects: list[float], kpoints: Kpoints, directory: str) -> None:
@@ -67,7 +64,7 @@ def parse_args():
     parser.add_argument('--step', type=float, default=0.1,)
     parser.add_argument('--start', type=float, default=0.1,)
     parser.add_argument('--stop', type=float, default=1.1)
-    parser.add_argument('--kpoints', type=int, nargs=3, default=[4, 4, 1])
+    parser.add_argument('--kpoints', type=int, nargs=3, default=[5, 5, 1])
     parser.add_argument('--dipole', action='store_true')
     
     return parser.parse_args()

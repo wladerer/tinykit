@@ -4,6 +4,8 @@ pyproject.toml
 src/tinykit/adsorb.py
 src/tinykit/bulkviz.py
 src/tinykit/charge.py
+src/tinykit/dosplot.py
+src/tinykit/irreps.py
 src/tinykit/slabgen.py
 src/tinykit/slabviz.py
 src/tinykit.egg-info/PKG-INFO

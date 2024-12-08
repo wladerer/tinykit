@@ -44,8 +44,9 @@ def main():
     parser.add_argument('input', help='Input VASP file (CONTCAR or vasprun.xml)')
     parser.add_argument('-c', '--colors', help='YAML file specifying custom colors for atoms', default=None)
     parser.add_argument('-o', '--output', help='Output file name', default='slab.png')
-    parser.add_argument('--rotation', help='Rotation of the slab', default=[2.87, 3.43 ,-0.0229], nargs=3, type=float)
-    parser.add_argument('--supercell', help='Supercell dimensions', default=[2, 2, 1], nargs=3, type=int)
+#    parser.add_argument('--rotation', help='Rotation of the slab', default=[2.87, 3.43 ,-0.0229], nargs=3, type=float)
+    parser.add_argument('--rotation', help='Rotation of the slab', default=[0,0,0], nargs=3, type=float)
+    parser.add_argument('--supercell', help='Supercell dimensions', default=[1, 1, 1], nargs=3, type=int)
 
     args = parser.parse_args()
 
