@@ -47,7 +47,7 @@ def write_directories(structure: Structure, nelects: list[float], kpoints: Kpoin
         potcar = Potcar(symbols=poscar.site_symbols, functional="PBE")
         #update incar_dict with NELECT
         incar_dict = base_incar_dict.copy()
-        incar_dict["NELECT"] = nelect
+        incar_dict["NELECT"] = round(nelect, 6)
         incar = Incar.from_dict(incar_dict)
         
         input_set = VaspInput(incar=incar, kpoints=kpoints, poscar=poscar, potcar=potcar)
@@ -62,7 +62,7 @@ def parse_args():
     # Command-line arguments
     parser.add_argument('structure', type=str,
                         help='Path to the structure file')
-    parser.add_argument('--step', type=float, default=0.1,)
+    parser.add_argument('--step', type=float, default=0.0,)
     parser.add_argument('--start', type=float, default=0.1,)
     parser.add_argument('--stop', type=float, default=1.1)
     parser.add_argument('--kpoints', type=int, nargs=3, default=[5, 5, 1])

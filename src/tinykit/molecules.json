@@ -309,6 +309,31 @@
         ],
         "properties": {}
     },
+    "C": {
+        "@module": "pymatgen.core.structure",
+        "@class": "Molecule",
+        "charge": 0.0,
+        "spin_multiplicity": 1,
+        "sites": [
+            {
+                "name": "C",
+                "species": [
+                    {
+                        "element": "C",
+                        "occu": 1
+                    }
+                ],
+                "xyz": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "properties": {},
+                "label": "C"
+            }
+        ],
+        "properties": {}
+    },
     "O": {
         "@module": "pymatgen.core.structure",
         "@class": "Molecule",
