@@ -9,15 +9,23 @@ import os
 default_atom_type_to_color_map = {
     'Pt': (208, 208, 224),
     'Sn': (102, 128, 128),
+    'Sr': (0, 255, 0),
+    'Ag': (192, 192, 192),
+    'Sb': (158, 99, 181),
     'H': (85, 173, 211),
     'C': (166,84,77),
+    'O': (166,10,0),
 }
 
 default_atom_type_to_radius_map = {
     'Pt': 1.5,
     'Sn': 1.5,
+    'Sr': 2.1,
+    'Ag': 1.5,
+    'Sb': 1.4,
     'H': 0.8,
     'C': 1.0,
+    'O': 1.1,
 }
 
 # Convert colors to 0 to 1 scale
@@ -90,11 +98,20 @@ def main():
         'canvas_height': 1100,  # Height of canvas in pixels
         'camera_dist': 20.,  # Distance from camera to front atom
         'celllinewidth': 0.0,  # Thickness of cell lines
+        'camera_type'  : 'orthographic', # perspective, ultra_wide_angle
+	    'point_lights' : [], #[(18,20,40), 'White'],[(60,20,40),'White'],             # [[loc1, color1], [loc2, color2],...]
+	    'area_light'   : [(2., 3., 125.), # location
+	                      'White',       # color
+	                      .95, .8, 5, 4], # width, height, Nlamps_x, Nlamps_y
     }
 
     args.output = update_image_extension(args.output)
     rotation = array_to_rotation_string(args.rotation)
     renderer = write(args.output, slab, format='pov', colors=colors, rotation=rotation, radii=radii, povray_settings=povray_settings).render()
+
+    #remove .ini and .pov files 
+    os.remove(args.output.replace('.pov', '.ini'))
+    os.remove(args.output.replace('.pov', '.pov'))
 
 if __name__ == "__main__":
     main()

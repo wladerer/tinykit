@@ -24,6 +24,7 @@ adsorb = "tinykit.adsorb:main"
 slabgen = "tinykit.slabgen:main"
 "bulkviz" = "tinykit.bulkviz:main"
 "charge" = "tinykit.charge:main"
+"stmplot" = "tinykit.stmplot:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]

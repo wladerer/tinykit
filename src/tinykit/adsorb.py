@@ -68,6 +68,9 @@ def structure_from_pubchem(cid: int, output: str = None):
         molecule.to(fmt="xyz", filename=output)
 
 
+
+
+
 def adsorb(structure: Structure, molecule: Molecule, supercell: list[int] = [2,2,1], **find_args) -> list[Structure]:
     """generates a list of adsorbed structures"""
 
@@ -102,6 +105,7 @@ def main():
     parser.add_argument("molecule", type=str, help="Molecule to adsorb", choices=molecules.keys())
     parser.add_argument("--supercell", type=int, nargs=3, default=[2,2,1], help="Supercell to generate")
     parser.add_argument("-d", "--distance", type=float, default=1.8, help="Distance between adsorbate center of mass and surface site")
+
 
     args = parser.parse_args()
 

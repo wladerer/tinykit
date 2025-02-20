@@ -18,7 +18,7 @@ def parse_args():
                         help='Path to the structure file')
     parser.add_argument('--hkl', type=int, default=1,
                         help='Miller indices for the surface (default: max index 1)')
-    parser.add_argument('--thicknesses', type=float, nargs='+', default=[12],
+    parser.add_argument('-t','--thicknesses', type=float, nargs='+', default=[12],
                         help='Slab thicknesses to generate (default: [12])')
     parser.add_argument('--vacuums', type=float, nargs='+', default=[15],
                         help='Vacuum thicknesses to add (default: [15])')
@@ -27,6 +27,8 @@ def parse_args():
     parser.add_argument('--config_dict', type=str, default='pe_relax',
                         help='Configuration dictionary for slab generation (default: pe_relax)')
     parser.add_argument('-a', '--allow-asymmetric', action='store_true')
+    parser.add_argument('--no-tasker', action='store_true',
+                        help='Uses pymatgen to generate slabs without checking for suitability (dipole, symmetry, etc)')
     
     return parser.parse_args()
 
@@ -34,18 +36,28 @@ def main():
     # Parse arguments
     args = parse_args()
 
-    # Generate slabs
-    slabs_dict = generate_slabs(
-        structure=args.structure,
-        hkl=args.hkl,
-        thicknesses=args.thicknesses,
-        vacuums=args.vacuums,
-        make_input_files=True,
-        layers_to_relax=args.layers_to_relax,
-        save_slabs=True,
-        config_dict=args.config_dict,
-        is_symmetric=False if args.allow_asymmetric else True
-    )
+    if args.no_tasker:
+        # Generate slabs without tasker
+        from pymatgen import Structure
+        from surfaxe import SlabGenerator
+        structure = Structure.from_file(args.structure)
+        slabgen = SlabGenerator(structure, hkl=args.hkl, min_slab_size=min(args.thicknesses), min_vacuum_size=15)
+
+    else:
+        # Generate slabs
+        slabs_dict = generate_slabs(
+            structure=args.structure,
+            hkl=args.hkl,
+            thicknesses=args.thicknesses,
+            vacuums=args.vacuums,
+            make_input_files=True,
+            layers_to_relax=args.layers_to_relax,
+            save_slabs=True,
+            config_dict=args.config_dict,
+            is_symmetric=False if args.allow_asymmetric else True
+        )
+
+
 
 
 if __name__ == "__main__":

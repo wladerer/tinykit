@@ -5,9 +5,11 @@ src/tinykit/adsorb.py
 src/tinykit/bulkviz.py
 src/tinykit/charge.py
 src/tinykit/dosplot.py
+src/tinykit/findsurface.py
 src/tinykit/irreps.py
 src/tinykit/slabgen.py
 src/tinykit/slabviz.py
+src/tinykit/stmplot.py
 src/tinykit.egg-info/PKG-INFO
 src/tinykit.egg-info/SOURCES.txt
 src/tinykit.egg-info/dependency_links.txt
