@@ -2,12 +2,63 @@ import argparse
 import warnings
 from surfaxe.generation import generate_slabs
 
+from pymatgen.io.vasp.inputs import Incar, Kpoints, Poscar, Potcar, VaspInput
+from pymatgen.core.structure import Structure
+from pymatgen.core.surface import SlabGenerator
+from pathlib import Path
+
+kpoints = Kpoints.gamma_automatic((5,5,1), shift=(0,0,0))
+
+incar_dict = {
+    "ALGO": "Normal",
+    "EDIFF": 1e-06,
+    "EDIFFG": -0.01,
+    "ENCUT": 500,
+    "GGA": "Pe",
+    "IBRION": 2,
+    "ISIF": 2,
+    "ISMEAR": 0,
+    "ISYM": 2,
+    "IVDW": 4,
+    "IWAVPR": 1,
+    "KPAR": 8,
+    "LASPH": True,
+    "LCHARG": True,
+    "LMAXMIX": 6,
+    "LORBIT": 11,
+    "LREAL": "Auto",
+    "LVHAR": True,
+    "LWAVE": False,
+    "NELM": 60,
+    "NSW": 100,
+    "POTIM": 0.4,
+    "PREC": "Accurate",
+    "SIGMA": 0.02,
+    "NCORE": 64,
+}
+
 # Filter warnings
 warnings.filterwarnings("always")
 warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 warnings.filterwarnings("ignore", message="POTCAR data")
 warnings.filterwarnings("ignore", message="Overriding the POTCAR functional")
 
+def write_directories(structures: list[Structure], directory: str) -> None:
+    """writes each structure to its own directory"""
+
+    for index, structure in enumerate(structures):
+        path = Path(directory) / f"adsorb_{index}"
+        path.mkdir(parents=True, exist_ok=True)
+
+        #create poscar from structure
+        poscar = Poscar(structure)
+        potcar = Potcar(symbols=poscar.site_symbols, functional="PBE")
+        incar = Incar.from_dict(incar_dict)
+        
+        input_set = VaspInput(incar=incar, kpoints=kpoints, poscar=poscar, potcar=potcar)
+        input_set.write_input(path)
+
+    return None
 
 # Define argument parser
 def parse_args():
@@ -38,10 +89,20 @@ def main():
 
     if args.no_tasker:
         # Generate slabs without tasker
-        from pymatgen.core import Structure
-        from pymatgen.analysis.adsorption import SlabGenerator
         structure = Structure.from_file(args.structure)
         slabgen = SlabGenerator(structure, hkl=args.hkl, min_slab_size=min(args.thicknesses), min_vacuum_size=15)
+        slabgen = SlabGenerator(
+        structure,
+        miller_plane,
+        min_slab_size=min(args.thicknesses),
+        min_vacuum_size=15,
+        center_slab=True,
+        reorient_lattice=True,
+        lll_reduce=True,
+    )
+        slabs = slabgen.get_slabs()
+
+
 
     else:
         # Generate slabs
@@ -56,8 +117,6 @@ def main():
             config_dict=args.config_dict,
             is_symmetric=False if args.allow_asymmetric else True
         )
-
-
 
 
 if __name__ == "__main__":
