@@ -38,8 +38,8 @@ def main():
 
     if args.no_tasker:
         # Generate slabs without tasker
-        from pymatgen import Structure
-        from surfaxe import SlabGenerator
+        from pymatgen.core import Structure
+        from pymatgen.analysis.adsorption import SlabGenerator
         structure = Structure.from_file(args.structure)
         slabgen = SlabGenerator(structure, hkl=args.hkl, min_slab_size=min(args.thicknesses), min_vacuum_size=15)
 
