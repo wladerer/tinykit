@@ -1,11 +1,7 @@
 import argparse
-import warnings
-from surfaxe.generation import generate_slabs
-
 from pymatgen.io.vasp.inputs import Incar, Kpoints, Poscar, Potcar, VaspInput
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.core.structure import Structure
-from pymatgen.core.composition import Composition
 from pathlib import Path
 
 from ase.io import read 
@@ -13,7 +9,7 @@ from ase.io import read
 
 def sanitize_filename(name: str) -> str:
     """Sanitize a string to be used as a directory name."""
-    return "".join(c if c.isalnum() or c in ["_", "-"] else "_" for c in name)
+    return "".join(c if c.isalnum() else "" for c in name)
 
 
 def assemble_vasp_inputs(structures: list[Structure], incar: Incar, kpoints: Kpoints) -> list[VaspInput]:
@@ -30,7 +26,7 @@ def assemble_vasp_inputs(structures: list[Structure], incar: Incar, kpoints: Kpo
 
 # Define argument parser
 def parse_args():
-    parser = argparse.ArgumentParser(description="Generate and plot slabs for surface analysis.")
+    parser = argparse.ArgumentParser(description="Generate VASP input files from a list of structures.")
     
     # Command-line arguments
     parser.add_argument('structures', type=str,
@@ -77,7 +73,7 @@ def main():
     for i, (structure, input_set) in enumerate(zip(structures, inputs)):
         # Get a more descriptive name based on the chemical formula
         formula = sanitize_filename(structure.composition.reduced_formula)
-        output_dir = Path(args.output) / f"{formula}_slab_{i+1}"
+        output_dir = Path(args.output) / f"{formula}_{i+1}"
         output_dir.mkdir(parents=True, exist_ok=True)
         
         input_set.write_input(output_dir)

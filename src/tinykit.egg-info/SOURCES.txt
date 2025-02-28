@@ -4,6 +4,7 @@ pyproject.toml
 src/tinykit/adsorb.py
 src/tinykit/bulkviz.py
 src/tinykit/charge.py
+src/tinykit/deploy.py
 src/tinykit/dosplot.py
 src/tinykit/findsurface.py
 src/tinykit/irreps.py
