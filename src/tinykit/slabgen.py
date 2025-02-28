@@ -90,6 +90,7 @@ def main():
     if args.no_tasker:
         # Generate slabs without tasker
         structure = Structure.from_file(args.structure)
+        
         slabgen = SlabGenerator(structure, hkl=args.hkl, min_slab_size=min(args.thicknesses), min_vacuum_size=15)
         slabgen = SlabGenerator(
         structure,

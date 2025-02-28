@@ -55,7 +55,6 @@ def main():
 #    parser.add_argument('--rotation', help='Rotation of the slab', default=[2.87, 3.43 ,-0.0229], nargs=3, type=float)
     parser.add_argument('--rotation', help='Rotation of the slab', default=[0,0,0], nargs=3, type=float)
     parser.add_argument('--supercell', help='Supercell dimensions', default=[1, 1, 1], nargs=3, type=int)
-    parser.add_argument('--yulan_scale', help='Scale the atoms by their z position', action='store_true')
 
     args = parser.parse_args()
 
@@ -64,13 +63,7 @@ def main():
         print(f"Error: File '{args.input}' does not exist.")
         return
 
-    if args.input.endswith('CONTCAR') or args.input.endswith('POSCAR'):
-        slab = read(args.input, index=-1)
-    elif args.input.endswith('vasprun.xml'):
-        slab = read(args.input, index=-1)
-    else:
-        print("Error: Input file must be a CONTCAR, POSCAR, or vasprun.xml.")
-        return
+    slab = read(args.input, index=-1)
 
     slab = slab * args.supercell
     # Load custom colors from YAML if specified
@@ -84,22 +77,6 @@ def main():
     atom_type_to_color_map = normalize_colors(atom_type_to_color_map)
     colors = [atom_type_to_color_map[a.symbol] for a in slab]
     radii = np.array([default_atom_type_to_radius_map[a.symbol] for a in slab]) - 0.4
-
-    if args.yulan_scale:
-        #make the atom radii smaller as z gets smaller
-        slab = slab[np.argsort(slab.positions[:,2])]
-        radii = np.linspace(0.5, 1.5, len(slab))
-        radii = radii[np.argsort(slab.positions[:,2])]
-        radii = radii - 0.4
-
-    # hatoms = [a for a in slab if a.symbol == 'H']
-
-    # # Get x and y dimensions of the slab
-    # x = slab.cell[0]
-    # y = slab.cell[1]
-
-    # closest_h = min(hatoms, key=lambda a: a.position[0]**2 + a.position[1]**2)
-    # slab.translate(-closest_h.position)
 
     povray_settings = {
         'canvas_width': None,  # Width of canvas in pixels
