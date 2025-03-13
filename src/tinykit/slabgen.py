@@ -43,11 +43,24 @@ warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
 warnings.filterwarnings("ignore", message="POTCAR data")
 warnings.filterwarnings("ignore", message="Overriding the POTCAR functional")
 
+def generate_miller_planes(hkl_max: int) -> list[tuple[int]]:
+    """generates a list of miller planes for slab generation"""
+    
+    miller_planes = []
+    for h in range(hkl_max+1):
+        for k in range(hkl_max+1):
+            for l in range(hkl_max+1):
+                if h == 0 and k == 0 and l == 0:
+                    continue
+                miller_planes.append((h, k, l))
+    
+    return miller_planes
+
 def write_directories(structures: list[Structure], directory: str) -> None:
     """writes each structure to its own directory"""
 
     for index, structure in enumerate(structures):
-        path = Path(directory) / f"adsorb_{index}"
+        path = Path(directory) / f"slab_{index}"
         path.mkdir(parents=True, exist_ok=True)
 
         #create poscar from structure
@@ -90,23 +103,27 @@ def main():
     if args.no_tasker:
         # Generate slabs without tasker
         structure = Structure.from_file(args.structure)
-        
-        slabgen = SlabGenerator(structure, hkl=args.hkl, min_slab_size=min(args.thicknesses), min_vacuum_size=15)
-        slabgen = SlabGenerator(
-        structure,
-        miller_plane,
-        min_slab_size=min(args.thicknesses),
-        min_vacuum_size=15,
-        center_slab=True,
-        reorient_lattice=True,
-        lll_reduce=True,
-    )
-        slabs = slabgen.get_slabs()
+        slabs_dict = {}
+        for hkl in generate_miller_planes(args.hkl):
+            slabgen = SlabGenerator(
+                structure,
+                hkl,
+                min_slab_size=min(args.thicknesses),
+                min_vacuum_size=15,
+                center_slab=True,
+                reorient_lattice=True,
+                lll_reduce=True,
+            )
+            slabs = slabgen.get_slabs()
+            #hkl to string
+            hkl_str = f"{hkl[0]}{hkl[1]}{hkl[2]}"
+            slabs_dict[hkl_str] = slabs
 
-
+            write_directories(slabs, hkl_str) 
 
     else:
         # Generate slabs
+
         slabs_dict = generate_slabs(
             structure=args.structure,
             hkl=args.hkl,
