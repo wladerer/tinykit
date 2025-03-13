@@ -119,7 +119,7 @@ def main():
             hkl_str = f"{hkl[0]}{hkl[1]}{hkl[2]}"
             slabs_dict[hkl_str] = slabs
 
-            write_directories(slabs, hkl_str) 
+            write_directories(slabs, f"GeneratedSlabs/{hkl_str}") 
 
     else:
         # Generate slabs
