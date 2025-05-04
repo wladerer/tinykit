@@ -79,6 +79,11 @@ def main():
         print(f"Error reading KPOINTS file: {e}")
         return
 
+    if args.freeze:
+        # Freeze atoms in the structures
+        for i, structure in enumerate(structures):
+            structures[i] = freeze_atoms(structure)
+
     # Generate VASP inputs
     inputs = assemble_vasp_inputs(structures, incar, kpoints)
 
