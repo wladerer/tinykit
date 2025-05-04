@@ -79,6 +79,10 @@ def main():
         print(f"Error reading KPOINTS file: {e}")
         return
 
+    #print the volume of each structure
+    for i, structure in enumerate(structures):
+        print(f"Structure {i+1} volume: {structure.volume:.2f} A^3")
+
     if args.freeze:
         # Freeze atoms in the structures
         for i, structure in enumerate(structures):
