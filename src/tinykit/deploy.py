@@ -23,6 +23,17 @@ def assemble_vasp_inputs(structures: list[Structure], incar: Incar, kpoints: Kpo
 
     return inputs
 
+def freeze_atoms(structure: Structure, fraction: float = 0.75) -> Structure:
+    """Freeze a fraction of atoms in the structure."""
+    sites = structure.sites
+    sites_sorted = sorted(sites, key=lambda x: x.coords[2])
+    num_atoms_to_freeze = int(len(sites) * fraction)
+    for site in sites_sorted[:num_atoms_to_freeze]:
+        site.properties['selective_dynamics'] = [False, False, False]
+    for site in sites_sorted[num_atoms_to_freeze:]:
+        site.properties['selective_dynamics'] = [True, True, True]
+    return structure
+
 
 # Define argument parser
 def parse_args():
@@ -37,6 +48,8 @@ def parse_args():
                         help='Path to the incar file (default: INCAR)')
     parser.add_argument('-o', '--output', type=str, default='./kamino',
                         help='Output directory for VASP inputs (default: ./kamino)')
+    parser.add_argument('--freeze', action='store_true',
+                        help='Freeze bottom 75% of atoms in the structure')
 
     return parser.parse_args()
 
