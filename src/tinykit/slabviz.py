@@ -2,31 +2,23 @@
 import argparse
 import numpy as np
 import yaml
+import json
 from ase.io import read, write
 import os
 
-# Default color and radius mappings
-default_atom_type_to_color_map = {
-    'Pt': (208, 208, 224),
-    'Sn': (102, 128, 128),
-    'Sr': (0, 255, 0),
-    'Ag': (192, 192, 192),
-    'Sb': (158, 99, 181),
-    'H': (85, 173, 211),
-    'C': (166,84,77),
-    'O': (166,10,0),
-}
+import pathlib
+path = pathlib.Path(__file__).parent.absolute()
 
-default_atom_type_to_radius_map = {
-    'Pt': 1.5,
-    'Sn': 1.5,
-    'Sr': 2.1,
-    'Ag': 1.5,
-    'Sb': 1.4,
-    'H': 0.8,
-    'C': 1.0,
-    'O': 1.1,
-}
+atom_template_path = path / 'resources' / 'atom_templates.json'
+with open(atom_template_path, 'r') as f:
+    atom_template = json.load(f)
+
+
+def hex_to_rgb(hex_string):
+    return tuple(int(hex_string.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+
+default_atom_type_to_color_map = {k: hex_to_rgb(v['color']) for k, v in atom_template.items()}
+default_atom_type_to_radius_map = {k: v['radius'] for k, v in atom_template.items()}
 
 # Convert colors to 0 to 1 scale
 def normalize_colors(atom_colors):

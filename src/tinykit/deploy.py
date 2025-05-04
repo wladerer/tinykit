@@ -16,7 +16,7 @@ def assemble_vasp_inputs(structures: list[Structure], incar: Incar, kpoints: Kpo
     """Assemble VASP input files from structures, incar, kpoints, and potcar."""
     inputs = []
     for structure in structures:
-        poscar = Poscar(structure)
+        poscar = Poscar(structure, sort_structure=True)
         potcar = Potcar(symbols=poscar.site_symbols, functional="PBE")
         input_set = VaspInput(incar=incar, kpoints=kpoints, poscar=poscar, potcar=potcar)
         inputs.append(input_set)
