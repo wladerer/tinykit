@@ -44,12 +44,12 @@ warnings.filterwarnings("ignore", message="POTCAR data")
 warnings.filterwarnings("ignore", message="Overriding the POTCAR functional")
 
 def generate_miller_planes(hkl_max: int) -> list[tuple[int]]:
-    """generates a list of miller planes for slab generation"""
+    """generates a list of miller planes for slab generation, including negative planes"""
     
     miller_planes = []
-    for h in range(hkl_max+1):
-        for k in range(hkl_max+1):
-            for l in range(hkl_max+1):
+    for h in range(-hkl_max, hkl_max + 1):
+        for k in range(-hkl_max, hkl_max + 1):
+            for l in range(-hkl_max, hkl_max + 1):
                 if h == 0 and k == 0 and l == 0:
                     continue
                 miller_planes.append((h, k, l))

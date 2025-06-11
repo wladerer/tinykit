@@ -41,7 +41,7 @@ def parse_args():
     
     # Command-line arguments
     parser.add_argument('structures', type=str,
-                        help='Path to the structures file (extxyz, XDATCAR, etc.)')
+                        help='Path to the structures file (traj, extxyz, XDATCAR, etc.)')
     parser.add_argument('-k', '--kpoints', type=str, default='KPOINTS',
                         help='Path to the kpoints file (default: KPOINTS)')
     parser.add_argument('-i', '--incar', type=str, default='INCAR',
@@ -79,9 +79,6 @@ def main():
         print(f"Error reading KPOINTS file: {e}")
         return
 
-    #print the volume of each structure
-    for i, structure in enumerate(structures):
-        print(f"Structure {i+1} volume: {structure.volume:.2f} A^3")
 
     if args.freeze:
         # Freeze atoms in the structures
