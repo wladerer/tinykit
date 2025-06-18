@@ -81,7 +81,7 @@ def main():
     if args.freeze:
         # Freeze atoms in the structures
         for i, structure in enumerate(structures):
-            structures[i] = freeze_atoms(structure)
+            structures[i] = freeze_atoms(structure, args.freeze)
 
     # Generate VASP inputs
     inputs = assemble_vasp_inputs(structures, incar, kpoints)
