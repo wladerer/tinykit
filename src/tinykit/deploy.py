@@ -23,15 +23,13 @@ def assemble_vasp_inputs(structures: list[Structure], incar: Incar, kpoints: Kpo
 
     return inputs
 
-def freeze_atoms(structure: Structure, fraction: float = 0.75) -> Structure:
-    """Freeze a fraction of atoms in the structure."""
-    sites = structure.sites
-    sites_sorted = sorted(sites, key=lambda x: x.coords[2])
-    num_atoms_to_freeze = int(len(sites) * fraction)
-    for site in sites_sorted[:num_atoms_to_freeze]:
-        site.properties['selective_dynamics'] = [False, False, False]
-    for site in sites_sorted[num_atoms_to_freeze:]:
-        site.properties['selective_dynamics'] = [True, True, True]
+def freeze_atoms(structure: Structure, z_limit: float) -> Structure:
+    """Freeze atoms in the structure below a specific z-coordinate."""
+    for site in structure.sites:
+        if site.coords[2] < z_limit:
+            site.properties['selective_dynamics'] = [False, False, False]
+        else:
+            site.properties['selective_dynamics'] = [True, True, True]
     return structure
 
 
@@ -48,8 +46,8 @@ def parse_args():
                         help='Path to the incar file (default: INCAR)')
     parser.add_argument('-o', '--output', type=str, default='./kamino',
                         help='Output directory for VASP inputs (default: ./kamino)')
-    parser.add_argument('--freeze', action='store_true',
-                        help='Freeze bottom 75% of atoms in the structure')
+    parser.add_argument('--freeze-z', type=float, default=None,
+                        help='Freeze atoms below the specified z-coordinate')
 
     return parser.parse_args()
 
