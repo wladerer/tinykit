@@ -46,7 +46,7 @@ def parse_args():
                         help='Path to the incar file (default: INCAR)')
     parser.add_argument('-o', '--output', type=str, default='./kamino',
                         help='Output directory for VASP inputs (default: ./kamino)')
-    parser.add_argument('--freeze-z', type=float, default=None,
+    parser.add_argument('--freeze', type=float, default=None,
                         help='Freeze atoms below the specified z-coordinate')
 
     return parser.parse_args()
