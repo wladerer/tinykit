@@ -1,4 +1,4 @@
-Metadata-Version: 2.2
+Metadata-Version: 2.4
 Name: tinykit
 Version: 0.0.1
 Summary: A Python package to simplify preapring and analyzing VASP calculations
@@ -12,6 +12,7 @@ Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: numpy
 Requires-Dist: ase
+Dynamic: license-file
 
 # slabvis
 
