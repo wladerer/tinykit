@@ -42,25 +42,6 @@ incar_dict = {
     "NCORE": 64,
 }
 
-def structure_from_pubchem(cid: int, output: str = None):
-    """Gets a structure from PubChem"""
-    from pymatgen.core import Molecule
-    import pubchempy as pcp
-    compound = pcp.Compound.from_cid(cid, record_type='3d')
-
-    #convert json data to xyz
-    compound_dict = compound.to_dict(properties=['atoms'])
-    symbols_and_coordinates = [(atom['element'], atom['x'], atom['y'], atom['z']) for atom in compound_dict['atoms']]
-    #create a molecule
-    species = [symbol for symbol, *_ in symbols_and_coordinates]
-    coords = np.array([coord for *, *coord in symbols_and_coordinates])
-    molecule = Molecule(species, coords)
-
-    if not output:
-        print(molecule.to(fmt="xyz"))
-    else:
-        molecule.to(fmt="xyz", filename=output)
-
 def create_single_atom_molecule(element: str) -> Molecule:
     """Creates a single atom molecule from an element symbol"""
     from pymatgen.core import Element
