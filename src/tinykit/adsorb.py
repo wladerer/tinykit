@@ -260,6 +260,9 @@ def main():
     parser.add_argument("--multiple", type=int, default=None, help="Number of adsorbates to add")
     parser.add_argument("--min-distance", type=float, default=2.0, 
                        help="Minimum distance between adsorbates in multiple adsorption")
+    parser.add_argument("--sites", type=str, nargs='+', default=['ontop', 'bridge', 'hollow'],
+                       choices=['ontop', 'bridge', 'hollow'],
+                       help="Types of adsorption sites to consider (e.g., --sites ontop bridge)")
     args = parser.parse_args()
 
     structure = Structure.from_file(args.structure)
@@ -276,8 +279,12 @@ def main():
             structure, 
             molecule, 
             args.multiple, 
-            distance=args.min_distance
+            distance=args.min_distance,
+            positions=tuple(args.sites)  # Use the specified site types
         )
+        
+        # Optional: Further filter by site types if needed
+        # structure_info_list = filter_by_site_type(structure_info_list, args.sites)
         
         # Extract just the structures for writing directories
         adsorbed_structures = extract_structures_only(structure_info_list)
