@@ -8,6 +8,7 @@ from pymatgen.core.structure import Structure, Molecule
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from itertools import combinations
 import argparse
+import random
 
 molecules_json = Path(__file__).parent / "molecules.json"
 molecules = json.loads(molecules_json.read_text())
@@ -81,11 +82,12 @@ def adsorb(structure: Structure, molecule: Molecule, supercell: list[int,int,int
 
     return adsorbed_structures
 
-
 def adsorb_sampling(structure: Structure, molecule: Molecule, multiplicity: int, 
-                   distance: float = 2.0, positions=('ontop', 'bridge', 'hollow')):
+                   distance: float = 2.0, positions=('ontop', 'bridge', 'hollow'),
+                   max_samples: int = None, random_seed: int = None):
     """
     Generate all unique combinations of adsorption sites for a given multiplicity.
+    Optionally sample a random subset if the total number is too large.
     
     Args:
         structure: The slab structure
@@ -93,10 +95,16 @@ def adsorb_sampling(structure: Structure, molecule: Molecule, multiplicity: int,
         multiplicity: Number of adsorbates to place simultaneously
         distance: Minimum distance between adsorbates
         positions: Types of adsorption sites to consider
+        max_samples: Maximum number of structures to generate (None for all)
+        random_seed: Random seed for reproducible sampling (None for random)
     
     Returns:
-        list: All unique structures with adsorbates placed
+        list: All unique structures with adsorbates placed (or random sample)
     """
+    # Set random seed for reproducibility if specified
+    if random_seed is not None:
+        random.seed(random_seed)
+    
     finder = AdsorbateSiteFinder(structure)
     sites_dict = finder.find_adsorption_sites(
         distance=distance, 
@@ -129,7 +137,15 @@ def adsorb_sampling(structure: Structure, molecule: Molecule, multiplicity: int,
     
     # Get all combinations without repetition
     site_combinations = list(combinations(all_sites, multiplicity))
-    print(f"Generated {len(site_combinations)} unique combinations for multiplicity {multiplicity}")
+    total_combinations = len(site_combinations)
+    print(f"Total possible combinations for multiplicity {multiplicity}: {total_combinations}")
+    
+    # Sample random subset if max_samples is specified and we have more combinations than requested
+    if max_samples is not None and total_combinations > max_samples:
+        site_combinations = random.sample(site_combinations, max_samples)
+        print(f"Randomly sampled {max_samples} combinations out of {total_combinations}")
+    else:
+        print(f"Using all {total_combinations} combinations")
     
     # Create structures for each combination
     structures = []
@@ -175,6 +191,7 @@ def adsorb_sampling(structure: Structure, molecule: Molecule, multiplicity: int,
     
     print(f"Successfully created {len(structures)} structures")
     return structures
+
 
 def _check_site_distances(coords: list[np.ndarray], min_distance: float) -> bool:
     """
@@ -260,6 +277,10 @@ def main():
     parser.add_argument("--multiple", type=int, default=None, help="Number of adsorbates to add")
     parser.add_argument("--min-distance", type=float, default=2.0, 
                        help="Minimum distance between adsorbates in multiple adsorption")
+    parser.add_argument("--max-samples", type=int, default=None,
+                          help="Maximum number of structures to generate for multiple adsorption (None for all)")
+    parser.add_argument("--random-seed", type=int, default=None,
+                            help="Random seed for reproducible sampling (None for random)")
     parser.add_argument("--sites", type=str, nargs='+', default=['ontop', 'bridge', 'hollow'],
                        choices=['ontop', 'bridge', 'hollow'],
                        help="Types of adsorption sites to consider (e.g., --sites ontop bridge)")
@@ -279,6 +300,8 @@ def main():
             structure, 
             molecule, 
             args.multiple, 
+            max_samples=args.max_samples,
+            random_seed=args.random_seed,
             distance=args.min_distance,
             positions=tuple(args.sites)  # Use the specified site types
         )
