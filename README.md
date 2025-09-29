@@ -19,13 +19,13 @@ Generate adsorbed structures on surfaces with support for both single and multip
 
 ```bash
 # Single adsorbate on a surface
-tinykit adsorb POSCAR H2O --supercell 2 2 1 -d 1.8
+adsorb POSCAR H2O --supercell 2 2 1 -d 1.8
 
 # Multiple adsorbates with sampling
-tinykit adsorb POSCAR Ag --multiple 2 --min-distance 2.0 --max-samples 50
+adsorb POSCAR Ag --multiple 2 --min-distance 2.0 --max-samples 50
 
 # Specify adsorption sites
-tinykit adsorb POSCAR OH --multiple 3 --sites ontop bridge
+adsorb POSCAR OH --multiple 3 --sites ontop bridge
 ```
 
 **Features:**
@@ -40,13 +40,13 @@ Generate surface slabs from bulk structures with automatic Miller index enumerat
 
 ```bash
 # Generate slabs up to (1,1,1) Miller indices
-tinykit slabgen POSCAR --hkl 1 --thicknesses 12 15 --vacuums 15
+slabgen POSCAR --hkl 1 --thicknesses 12 15 --vacuums 15
 
 # Allow asymmetric slabs
-tinykit slabgen POSCAR --hkl 2 -a
+slabgen POSCAR --hkl 2 -a
 
 # Skip Tasker analysis (use pymatgen only)
-tinykit slabgen POSCAR --no-tasker
+slabgen POSCAR --no-tasker
 ```
 
 **Features:**
@@ -60,10 +60,10 @@ Convert structure trajectories into VASP calculation directories.
 
 ```bash
 # From trajectory file
-tinykit deploy structures.traj -i INCAR -k KPOINTS -o calculations/
+deploy structures.traj -i INCAR -k KPOINTS -o calculations/
 
 # Freeze bottom layers
-tinykit deploy structures.extxyz --freeze 10.0
+deploy structures.extxyz --freeze 10.0
 ```
 
 **Supported formats:** VASP XDATCAR, ASE trajectory, extended XYZ, etc.
@@ -73,10 +73,10 @@ Set up VASP calculations for charged surfaces with varying electron counts.
 
 ```bash
 # Generate NELECT series
-tinykit charge POSCAR --start 0.1 --stop 1.0 --step 0.1 --kpoints 5 5 1
+charge POSCAR --start 0.1 --stop 1.0 --step 0.1 --kpoints 5 5 1
 
 # With dipole correction
-tinykit charge POSCAR --dipole --start -0.5 --stop 0.5 --step 0.1
+charge POSCAR --dipole --start -0.5 --stop 0.5 --step 0.1
 ```
 
 ### `slabviz` - Structure Visualization
@@ -84,13 +84,13 @@ Render high-quality structure images using POV-Ray.
 
 ```bash
 # Basic rendering
-tinykit slabviz CONTCAR -o output.png
+slabviz CONTCAR -o output.png
 
 # Custom view and supercell
-tinykit slabviz CONTCAR --rotation 90 0 45 --supercell 2 2 1
+slabviz CONTCAR --rotation 90 0 45 --supercell 2 2 1
 
 # Custom atom colors
-tinykit slabviz CONTCAR -c colors.yaml
+slabviz CONTCAR -c colors.yaml
 ```
 
 ### `stmplot` - STM Image Simulation
@@ -98,10 +98,10 @@ Generate constant-current STM images from VASP charge density files.
 
 ```bash
 # From PARCHG file
-tinykit stmplot PARCHG -c 0.001 -o stm.png
+stmplot PARCHG -c 0.001 -o stm.png
 
 # Tiled periodic image
-tinykit stmplot PARCHG --current 0.001 --tiles 3
+stmplot PARCHG --current 0.001 --tiles 3
 ```
 
 ## Dependencies
