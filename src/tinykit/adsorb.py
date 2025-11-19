@@ -84,7 +84,7 @@ def adsorb(structure: Structure, molecule: Molecule, supercell: list[int,int,int
 
 def adsorb_sampling(structure: Structure, molecule: Molecule, multiplicity: int, 
                    distance: float = 2.0, positions=('ontop', 'bridge', 'hollow'),
-                   max_samples: int = None, random_seed: int = None):
+                    max_samples: int = None, random_seed: int = None, supercell: list[int,int,int] = None ):
     """
     Generate all unique combinations of adsorption sites for a given multiplicity.
     Optionally sample a random subset if the total number is too large.
@@ -97,6 +97,7 @@ def adsorb_sampling(structure: Structure, molecule: Molecule, multiplicity: int,
         positions: Types of adsorption sites to consider
         max_samples: Maximum number of structures to generate (None for all)
         random_seed: Random seed for reproducible sampling (None for random)
+        supercell: x,y, and z supercell expansion directions
     
     Returns:
         list: All unique structures with adsorbates placed (or random sample)
@@ -105,6 +106,10 @@ def adsorb_sampling(structure: Structure, molecule: Molecule, multiplicity: int,
     if random_seed is not None:
         random.seed(random_seed)
     
+    if supercell:
+        transformation = SupercellTransformation.from_scaling_factors(scale_a=supercell[0], scale_b=supercell[1], scale_c=supercell[2])
+        structure = transformation.apply_transformation(structure)
+
     finder = AdsorbateSiteFinder(structure)
     sites_dict = finder.find_adsorption_sites(
         distance=distance, 
@@ -270,7 +275,7 @@ def main():
     parser.add_argument("structure", type=str, help="Path to structure file")
     parser.add_argument("molecule", type=str,
                        help="Molecule to adsorb (from JSON file) or element symbol for single atom (e.g., 'Ag', 'Au', 'Pt')")
-    parser.add_argument("--supercell", type=int, nargs=3, default=[2,2,1], help="Supercell to generate")
+    parser.add_argument("--supercell", type=int, nargs=3, default=[1,1,1], help="Supercell to generate")
     parser.add_argument("-d", "--distance", type=float, default=1.8,
                        help="Distance between adsorbate center of mass and surface site")
     parser.add_argument("--incar", type=str, default=None, help="Path to reference INCAR file")
@@ -303,6 +308,7 @@ def main():
             max_samples=args.max_samples,
             random_seed=args.random_seed,
             distance=args.min_distance,
+            supercell=args.supercell,
             positions=tuple(args.sites)  # Use the specified site types
         )
         
