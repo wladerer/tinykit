@@ -5,6 +5,7 @@ from pathlib import Path
 from pymatgen.io.vasp.inputs import Incar, Kpoints, Potcar, Poscar
 from pymatgen.io.vasp.sets import VaspInput
 from pymatgen.core.structure import Structure, Molecule
+from pymatgen.transformations.standard_transformations import SupercellTransformation
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from itertools import combinations
 import argparse
