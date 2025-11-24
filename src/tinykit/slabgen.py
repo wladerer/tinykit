@@ -55,7 +55,7 @@ def apply_selective_dynamics(slab: Slab, layers_to_relax: int) -> Slab:
     positions = np.array([site.coords for site in slab.sites])
     projections = np.dot(positions, normal)
     
-    unique_projections = np.unique(np.round(projections, decimals=1))
+    unique_projections = np.unique(np.round(projections, decimals=0))
     unique_projections.sort()
     
     nlayers = len(unique_projections)
@@ -71,7 +71,7 @@ def apply_selective_dynamics(slab: Slab, layers_to_relax: int) -> Slab:
     top_threshold = unique_projections[nlayers - layers_to_relax]
     
     for site in slab.sites:
-        projection = np.round(np.dot(site.coords, normal), decimals=1)
+        projection = np.round(np.dot(site.coords, normal), decimals=0)
         
         if projection <= bottom_threshold or projection >= top_threshold:
             site.properties["selective_dynamics"] = [True, True, True]
