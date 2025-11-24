@@ -2,7 +2,6 @@ import argparse
 import warnings
 import json
 import numpy as np
-from surfaxe.generation import generate_slabs
 
 from pymatgen.io.vasp.inputs import Incar, Kpoints, Poscar, Potcar, VaspInput
 from pymatgen.core.structure import Structure
