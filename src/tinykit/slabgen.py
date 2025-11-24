@@ -55,7 +55,7 @@ def apply_selective_dynamics(slab: Slab, layers_to_relax: int) -> Slab:
     positions = np.array([site.coords for site in slab.sites])
     projections = np.dot(positions, normal)
     
-    unique_projections = np.unique(np.round(projections, decimals=3))
+    unique_projections = np.unique(np.round(projections, decimals=2))
     unique_projections.sort()
     
     nlayers = len(unique_projections)
