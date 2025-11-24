@@ -71,7 +71,7 @@ def apply_selective_dynamics(slab: Slab, layers_to_relax: int) -> Slab:
     top_threshold = unique_projections[nlayers - layers_to_relax]
     
     for site in slab.sites:
-        projection = np.round(np.dot(site.coords, normal), decimals=3)
+        projection = np.round(np.dot(site.coords, normal), decimals=2)
         
         if projection <= bottom_threshold or projection >= top_threshold:
             site.properties["selective_dynamics"] = [True, True, True]
