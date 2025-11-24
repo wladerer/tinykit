@@ -40,46 +40,44 @@ incar_dict = {
 
 def apply_selective_dynamics(slab: Slab, layers_to_relax: int) -> Slab:
     """
-    Apply selective dynamics to a slab structure, relaxing only the top and
+    Apply selective dynamics to a slab structure, relaxing only the top and 
     bottom layers while fixing the center.
-
+    
     Args:
         slab: Pymatgen Slab object
         layers_to_relax: Number of layers to relax at top and bottom
-
+        
     Returns:
         Slab with selective dynamics applied
     """
-    # Get all unique z-coordinates (layers) with tolerance
-    z_coords = slab.frac_coords[:, 2]
-    unique_z = np.unique(np.round(z_coords, decimals=3))
 
-    nlayers = len(unique_z)
-
-    # Check if slab has enough layers
+    normal = slab.normal
+    positions = np.array([site.coords for site in slab.sites])
+    projections = np.dot(positions, normal)
+    
+    unique_projections = np.unique(np.round(projections, decimals=3))
+    unique_projections.sort()
+    
+    nlayers = len(unique_projections)
+    
     if nlayers <= 2 * layers_to_relax:
         warnings.warn(
             f"Slab has {nlayers} layers but {2*layers_to_relax} layers "
             f"requested for relaxation. Skipping selective dynamics."
         )
         return slab
-
-    # Find z-coordinate thresholds for relaxation
-    # Bottom threshold: relax below this
-    bottom_threshold = unique_z[layers_to_relax - 1]
-    # Top threshold: relax above this
-    top_threshold = unique_z[nlayers - layers_to_relax]
-
-    # Apply selective dynamics site by site
+    
+    bottom_threshold = unique_projections[layers_to_relax - 1]
+    top_threshold = unique_projections[nlayers - layers_to_relax]
+    
     for site in slab.sites:
-        z = np.round(site.frac_coords[2], decimals=3)
-
-        # Relax top and bottom layers, fix center
-        if z <= bottom_threshold or z >= top_threshold:
+        projection = np.round(np.dot(site.coords, normal), decimals=3)
+        
+        if projection <= bottom_threshold or projection >= top_threshold:
             site.properties["selective_dynamics"] = [True, True, True]
         else:
             site.properties["selective_dynamics"] = [False, False, False]
-
+    
     return slab
 
 def write_slab_directories(
