@@ -38,13 +38,79 @@ incar_dict = {
     "NCORE": 64,
 }
 
-
+def apply_selective_dynamics(slab: Slab, layers_to_relax: int) -> Slab:
+    """
+    Apply selective dynamics to a slab structure, relaxing only the top and 
+    bottom layers while fixing the center.
+    
+    Args:
+        slab: Pymatgen Slab object
+        layers_to_relax: Number of layers to relax at top and bottom
+        
+    Returns:
+        Slab with selective dynamics applied
+    """
+    # Get the number of layers in the slab
+    nlayers = len(slab.oriented_unit_cell)
+    
+    # Check if slab has enough layers
+    if nlayers <= 2 * layers_to_relax:
+        warnings.warn(
+            f"Slab has {nlayers} layers but {2*layers_to_relax} layers "
+            f"requested for relaxation. Skipping selective dynamics."
+        )
+        return slab
+    
+    # Get z-coordinates of all sites
+    frac_coords = slab.frac_coords[:, 2]  # z-coordinates
+    
+    # Sort sites by z-coordinate to identify layers
+    sorted_indices = np.argsort(frac_coords)
+    sorted_z = frac_coords[sorted_indices]
+    
+    # Identify unique z-positions (layers) with tolerance
+    unique_z = []
+    tol = 0.01
+    for z in sorted_z:
+        if not unique_z or abs(z - unique_z[-1]) > tol:
+            unique_z.append(z)
+    
+    # Determine which layers to fix (center layers)
+    layers_to_fix = nlayers - 2 * layers_to_relax
+    bottom_fixed_layer = layers_to_relax
+    top_fixed_layer = nlayers - layers_to_relax
+    
+    # Create selective dynamics array
+    selective_dynamics = []
+    for site in slab:
+        z = site.frac_coords[2]
+        
+        # Find which layer this site belongs to
+        layer_index = 0
+        for i, unique_z_val in enumerate(unique_z):
+            if abs(z - unique_z_val) < tol:
+                layer_index = i
+                break
+        
+        # Determine if this layer should be fixed or relaxed
+        if bottom_fixed_layer <= layer_index < top_fixed_layer:
+            # Fix this site (False, False, False)
+            selective_dynamics.append([False, False, False])
+        else:
+            # Relax this site (True, True, True)
+            selective_dynamics.append([True, True, True])
+    
+    # Add selective dynamics to the structure
+    slab.add_site_property('selective_dynamics', selective_dynamics)
+    
+    return slab
 
 
 def write_slab_directories(
     slabs: list[Slab], 
     directory: str, 
     min_slab_size: float,
+    layers_to_relax: int = None,
 ) -> None:
 
     seen = set()
@@ -53,6 +119,10 @@ def write_slab_directories(
     for termination_index, slab in enumerate(slabs):
 
         slab = slab.get_sorted_structure(key=lambda s: s.species_string)
+        
+        # Apply selective dynamics if requested
+        if layers_to_relax is not None:
+            slab = apply_selective_dynamics(slab, layers_to_relax)
 
         sym_dir = "sym" if slab.is_symmetric() else "asym"
 
@@ -82,6 +152,7 @@ def write_slab_directories(
 
         with open(path / "slab.json", "w") as f:
             json.dump(slab.as_dict(), f, indent=2)
+
 
 # Define argument parser
 def parse_args():
@@ -135,12 +206,16 @@ def main():
         )
     
         slabs = slabs_asym + slabs_sym
-#        slabs = remove_duplicates(slabs)  # your existing hash-based system
     
         total_generated_slabs += len(slabs)
-        write_slab_directories(slabs, args.directory, min_slab_size=thickness)
+        write_slab_directories(
+            slabs, 
+            args.directory, 
+            min_slab_size=thickness,
+            layers_to_relax=args.layers_to_relax if args.layers_to_relax > 0 else None
+        )
             
-
     print(f"Generated {total_generated_slabs} slabs")
+
 if __name__ == "__main__":
     main()
