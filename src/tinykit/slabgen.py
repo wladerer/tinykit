@@ -37,21 +37,25 @@ incar_dict = {
     "NCORE": 64,
 }
 
+
 def apply_selective_dynamics(slab: Slab, layers_to_relax: int) -> Slab:
     """
-    Apply selective dynamics to a slab structure, relaxing only the top and 
+    Apply selective dynamics to a slab structure, relaxing only the top and
     bottom layers while fixing the center.
-    
+
     Args:
         slab: Pymatgen Slab object
         layers_to_relax: Number of layers to relax at top and bottom
-        
+
     Returns:
         Slab with selective dynamics applied
     """
-    # Get the number of layers in the slab
-    nlayers = len(slab.oriented_unit_cell)
-    
+    # Get all unique z-coordinates (layers) with tolerance
+    z_coords = slab.frac_coords[:, 2]
+    unique_z = np.unique(np.round(z_coords, decimals=3))
+
+    nlayers = len(unique_z)
+
     # Check if slab has enough layers
     if nlayers <= 2 * layers_to_relax:
         warnings.warn(
@@ -59,51 +63,24 @@ def apply_selective_dynamics(slab: Slab, layers_to_relax: int) -> Slab:
             f"requested for relaxation. Skipping selective dynamics."
         )
         return slab
-    
-    # Get z-coordinates of all sites
-    frac_coords = slab.frac_coords[:, 2]  # z-coordinates
-    
-    # Sort sites by z-coordinate to identify layers
-    sorted_indices = np.argsort(frac_coords)
-    sorted_z = frac_coords[sorted_indices]
-    
-    # Identify unique z-positions (layers) with tolerance
-    unique_z = []
-    tol = 0.01
-    for z in sorted_z:
-        if not unique_z or abs(z - unique_z[-1]) > tol:
-            unique_z.append(z)
-    
-    # Determine which layers to fix (center layers)
-    layers_to_fix = nlayers - 2 * layers_to_relax
-    bottom_fixed_layer = layers_to_relax
-    top_fixed_layer = nlayers - layers_to_relax
-    
-    # Create selective dynamics array
-    selective_dynamics = []
-    for site in slab:
-        z = site.frac_coords[2]
-        
-        # Find which layer this site belongs to
-        layer_index = 0
-        for i, unique_z_val in enumerate(unique_z):
-            if abs(z - unique_z_val) < tol:
-                layer_index = i
-                break
-        
-        # Determine if this layer should be fixed or relaxed
-        if bottom_fixed_layer <= layer_index < top_fixed_layer:
-            # Fix this site (False, False, False)
-            selective_dynamics.append([False, False, False])
-        else:
-            # Relax this site (True, True, True)
-            selective_dynamics.append([True, True, True])
-    
-    # Add selective dynamics to the structure
-    slab.add_site_property('selective_dynamics', selective_dynamics)
-    
-    return slab
 
+    # Find z-coordinate thresholds for relaxation
+    # Bottom threshold: relax below this
+    bottom_threshold = unique_z[layers_to_relax - 1]
+    # Top threshold: relax above this
+    top_threshold = unique_z[nlayers - layers_to_relax]
+
+    # Apply selective dynamics site by site
+    for site in slab.sites:
+        z = np.round(site.frac_coords[2], decimals=3)
+
+        # Relax top and bottom layers, fix center
+        if z <= bottom_threshold or z >= top_threshold:
+            site.properties["selective_dynamics"] = [True, True, True]
+        else:
+            site.properties["selective_dynamics"] = [False, False, False]
+
+    return slab
 
 def write_slab_directories(
     slabs: list[Slab], 
