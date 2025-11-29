@@ -5,7 +5,7 @@ import numpy as np
 
 from pymatgen.io.vasp.inputs import Incar, Kpoints, Poscar, Potcar, VaspInput
 from pymatgen.core.structure import Structure
-from pymatgen.core.surface import Slab, generate_all_slabs
+from pymatgen.core.surface import Slab, SlabGenerator, generate_all_slabs
 from pathlib import Path
 
 kpoints = Kpoints.gamma_automatic((1,1,1), shift=(0,0,0))
@@ -80,6 +80,48 @@ def apply_selective_dynamics(slab: Slab, layers_to_relax: int) -> Slab:
     
     return slab
 
+
+def generate_slabs_from_miller(
+    structure: Structure,
+    miller_index: tuple,
+    min_slab_size: float,
+    min_vacuum_size: float,
+    symmetrize: bool = False,
+    lll_reduce: bool = True,
+    center_slab: bool = True,
+    primitive: bool = True,
+) -> list[Slab]:
+    """
+    Generate slabs for a specific Miller index.
+    
+    Args:
+        structure: Input structure
+        miller_index: Specific Miller index tuple, e.g., (2, 0, 1) or (-2, 0, 1)
+        min_slab_size: Minimum slab thickness in Angstroms
+        min_vacuum_size: Minimum vacuum thickness in Angstroms
+        symmetrize: Whether to make top and bottom surfaces equivalent
+        lll_reduce: Whether to perform LLL reduction
+        center_slab: Whether to center the slab
+        primitive: Whether to reduce to primitive cell
+        
+    Returns:
+        List of Slab objects
+    """
+    slabgen = SlabGenerator(
+        initial_structure=structure,
+        miller_index=miller_index,
+        min_slab_size=min_slab_size,
+        min_vacuum_size=min_vacuum_size,
+        lll_reduce=lll_reduce,
+        center_slab=center_slab,
+        primitive=primitive,
+    )
+    
+    slabs = slabgen.get_slabs(symmetrize=symmetrize)
+    
+    return slabs
+
+
 def write_slab_directories(
     slabs: list[Slab], 
     directory: str, 
@@ -128,59 +170,135 @@ def write_slab_directories(
             json.dump(slab.as_dict(), f, indent=2)
 
 
-# Define argument parser
+def parse_miller_index(miller_str: str) -> tuple:
+    """
+    Parse a Miller index string into a tuple.
+    
+    Args:
+        miller_str: String like '201' or '-201' or '2,0,1' or '-2,0,1'
+        
+    Returns:
+        Tuple of integers, e.g., (2, 0, 1) or (-2, 0, 1)
+    """
+    # Remove spaces and handle comma-separated values
+    miller_str = miller_str.replace(' ', '')
+    
+    if ',' in miller_str:
+        # Handle comma-separated: '2,0,1' or '-2,0,1'
+        return tuple(int(x) for x in miller_str.split(','))
+    else:
+        # Handle concatenated: '201' or '-201'
+        result = []
+        i = 0
+        while i < len(miller_str):
+            if miller_str[i] == '-':
+                # Negative number
+                result.append(-int(miller_str[i+1]))
+                i += 2
+            else:
+                # Positive number
+                result.append(int(miller_str[i]))
+                i += 1
+        return tuple(result)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Generate and plot slabs for surface analysis.")
     
     # Command-line arguments
     parser.add_argument('structure', type=str,
                         help='Path to the structure file')
-    parser.add_argument('--hkl', type=int, default=1,
-                        help='Max Miller index for the surface (default: 1)')
+    parser.add_argument('--hkl', type=str, default=None,
+                        help='Specific Miller index (e.g., "201" or "-201" or "2,0,1")')
+    parser.add_argument('-m', '--max-hkl', type=int, default=None,
+                        help='Max Miller index for automatic generation (default: None)')
     parser.add_argument('-t','--thicknesses', type=float, nargs='+', default=[12],
                         help='Slab thicknesses to generate (default: [12])')
     parser.add_argument('--vacuum', type=float, default=15.0,
-                        help='Vacuum thicknesses to add (default: [15])')
+                        help='Vacuum thicknesses to add (default: 15)')
     parser.add_argument('--layers_to_relax', type=int, default=3,
                         help='Number of layers to relax (default: 3)')
-    parser.add_argument('--symmetrize', action='store_true', default=False, help='Force top and bottom surface to be equivalent (does not preserve stoichiometry)')
-    parser.add_argument('-d', "--directory",default='GeneratedSlabs', help='parent directory of all slabs',type=str)
+    parser.add_argument('--symmetrize', action='store_true', default=False, 
+                        help='Force top and bottom surface to be equivalent (does not preserve stoichiometry)')
+    parser.add_argument('-d', "--directory",default='GeneratedSlabs', 
+                        help='parent directory of all slabs',type=str)
     
     return parser.parse_args()
+
 
 def main():
     # Parse arguments
     args = parse_args()
 
-    # Generate slabs without tasker
+    # Validate that either hkl or max_hkl is provided
+    if args.hkl is None and args.max_hkl is None:
+        print("Error: Must specify either --max-hkl (-m) for automatic generation or --hkl for specific plane")
+        return
+    
+    if args.hkl is not None and args.max_hkl is not None:
+        print("Error: Cannot specify both --hkl and --max-hkl. Choose one.")
+        return
+
     structure = Structure.from_file(args.structure)
     total_generated_slabs = 0
+    
     for thickness in args.thicknesses:
-
-        slabs_asym = generate_all_slabs(
-            structure,
-            max_index=args.hkl,
-            min_slab_size=thickness,
-            min_vacuum_size=args.vacuum,
-            symmetrize=False,
-            lll_reduce=True,
-            center_slab=True,
-            primitive=True,
-        )
-    
-        slabs_sym = generate_all_slabs(
-            structure,
-            max_index=args.hkl,
-            min_slab_size=thickness,
-            min_vacuum_size=args.vacuum,
-            symmetrize=True,
-            lll_reduce=True,
-            center_slab=True,
-            primitive=True,
-        )
-    
-        slabs = slabs_asym + slabs_sym
-    
+        if args.hkl is not None:
+            # Generate slabs for specific Miller index
+            miller_index = parse_miller_index(args.hkl)
+            print(f"Generating slabs for Miller index {miller_index}")
+            
+            # Generate both symmetric and asymmetric slabs
+            slabs_asym = generate_slabs_from_miller(
+                structure=structure,
+                miller_index=miller_index,
+                min_slab_size=thickness,
+                min_vacuum_size=args.vacuum,
+                symmetrize=False,
+                lll_reduce=True,
+                center_slab=True,
+                primitive=True,
+            )
+            
+            slabs_sym = generate_slabs_from_miller(
+                structure=structure,
+                miller_index=miller_index,
+                min_slab_size=thickness,
+                min_vacuum_size=args.vacuum,
+                symmetrize=True,
+                lll_reduce=True,
+                center_slab=True,
+                primitive=True,
+            )
+            
+            slabs = slabs_asym + slabs_sym
+            
+        else:
+            # Original behavior: generate all slabs up to max_index
+            slabs_asym = generate_all_slabs(
+                structure,
+                max_index=args.max_hkl,
+                min_slab_size=thickness,
+                min_vacuum_size=args.vacuum,
+                symmetrize=False,
+                lll_reduce=True,
+                center_slab=True,
+                primitive=True,
+            )
+        
+            slabs_sym = generate_all_slabs(
+                structure,
+                max_index=args.max_hkl,
+                min_slab_size=thickness,
+                min_vacuum_size=args.vacuum,
+                symmetrize=True,
+                lll_reduce=True,
+                center_slab=True,
+                primitive=True,
+            )
+        
+            slabs = slabs_asym + slabs_sym
+        
         total_generated_slabs += len(slabs)
         write_slab_directories(
             slabs, 
@@ -190,6 +308,7 @@ def main():
         )
             
     print(f"Generated {total_generated_slabs} slabs")
+
 
 if __name__ == "__main__":
     main()
