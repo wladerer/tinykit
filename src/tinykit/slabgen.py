@@ -89,6 +89,7 @@ def generate_slabs_from_miller(
     symmetrize: bool = False,
     lll_reduce: bool = True,
     center_slab: bool = True,
+    in_unit_planes: bool = False,
     primitive: bool = True,
 ) -> list[Slab]:
     """
@@ -102,6 +103,7 @@ def generate_slabs_from_miller(
         symmetrize: Whether to make top and bottom surfaces equivalent
         lll_reduce: Whether to perform LLL reduction
         center_slab: Whether to center the slab
+        in_unit_planes: Whether to use lattice planes for thickness argument
         primitive: Whether to reduce to primitive cell
         
     Returns:
@@ -113,6 +115,7 @@ def generate_slabs_from_miller(
         min_slab_size=min_slab_size,
         min_vacuum_size=min_vacuum_size,
         lll_reduce=lll_reduce,
+        in_unit_planes=in_unit_planes,
         center_slab=center_slab,
         primitive=primitive,
     )
