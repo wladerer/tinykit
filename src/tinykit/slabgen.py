@@ -218,8 +218,8 @@ def parse_args():
                         help='Vacuum thicknesses to add (default: 15)')
     parser.add_argument('--layers_to_relax', type=int, default=3,
                         help='Number of layers to relax (default: 3)')
-    parser.add_argument('--symmetrize', action='store_true', default=False, 
-                        help='Force top and bottom surface to be equivalent (does not preserve stoichiometry)')
+    parser.add_argument('-u', '--unit_planes', action='store_true', default=False, 
+                        help='Use in unit planes for slab thickness')
     parser.add_argument('-d', "--directory",default='GeneratedSlabs', 
                         help='parent directory of all slabs',type=str)
     
@@ -254,6 +254,7 @@ def main():
                 miller_index=miller_index,
                 min_slab_size=thickness,
                 min_vacuum_size=args.vacuum,
+                in_unit_planes=args.unit_planes,
                 symmetrize=False,
                 lll_reduce=True,
                 center_slab=True,
@@ -265,6 +266,7 @@ def main():
                 miller_index=miller_index,
                 min_slab_size=thickness,
                 min_vacuum_size=args.vacuum,
+                in_unit_planes=args.unit_planes,
                 symmetrize=True,
                 lll_reduce=True,
                 center_slab=True,
@@ -280,6 +282,7 @@ def main():
                 max_index=args.max_hkl,
                 min_slab_size=thickness,
                 min_vacuum_size=args.vacuum,
+                in_unit_planes=args.unit_planes,
                 symmetrize=False,
                 lll_reduce=True,
                 center_slab=True,
@@ -291,6 +294,7 @@ def main():
                 max_index=args.max_hkl,
                 min_slab_size=thickness,
                 min_vacuum_size=args.vacuum,
+                in_unit_planes=args.unit_planes,
                 symmetrize=True,
                 lll_reduce=True,
                 center_slab=True,
