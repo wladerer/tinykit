@@ -83,120 +83,53 @@ def adsorb(structure: Structure, molecule: Molecule, supercell: list[int,int,int
 
     return adsorbed_structures
 
-def adsorb_sampling(structure: Structure, molecule: Molecule, multiplicity: int, 
-                   distance: float = 2.0, positions=('ontop', 'bridge', 'hollow'),
-                    max_samples: int = None, random_seed: int = None, supercell: list[int,int,int] = None ):
-    """
-    Generate all unique combinations of adsorption sites for a given multiplicity.
-    Optionally sample a random subset if the total number is too large.
-    
-    Args:
-        structure: The slab structure
-        molecule: The molecule to adsorb
-        multiplicity: Number of adsorbates to place simultaneously
-        distance: Minimum distance between adsorbates
-        positions: Types of adsorption sites to consider
-        max_samples: Maximum number of structures to generate (None for all)
-        random_seed: Random seed for reproducible sampling (None for random)
-        supercell: x,y, and z supercell expansion directions
-    
-    Returns:
-        list: All unique structures with adsorbates placed (or random sample)
-    """
-    # Set random seed for reproducibility if specified
-    if random_seed is not None:
-        random.seed(random_seed)
-    
-    if supercell:
-        transformation = SupercellTransformation.from_scaling_factors(scale_a=supercell[0], scale_b=supercell[1], scale_c=supercell[2])
-        structure = transformation.apply_transformation(structure)
+def adsorb_sampling(
+    slab: Structure,
+    molecule: Molecule,
+    multiplicity: int,
+    distance: float = 1.5,
+    supercell=None
+):
+    if supercell is not None:
+        slab = slab.copy()
+        slab.make_supercell(supercell)
 
-    finder = AdsorbateSiteFinder(structure)
-    sites_dict = finder.find_adsorption_sites(
-        distance=distance, 
-        put_inside=True, 
-        symm_reduce=0.01, 
-        near_reduce=0.01, 
-        positions=positions, 
-        no_obtuse_hollow=True
-    )
-    
-    # Flatten all sites into a single list with site type information
-    all_sites = []
-    for site_type, site_coords in sites_dict.items():
-        for coord in site_coords:
-            all_sites.append({
-                'coord': coord,
-                'type': site_type,
-                'id': len(all_sites)  # Unique identifier for each site
-            })
-    
-    print(f"Found {len(all_sites)} total adsorption sites")
-    for site_type in positions:
-        count = len(sites_dict.get(site_type, []))
-        print(f"  {site_type}: {count} sites")
-    
-    # Generate all unique combinations for the given multiplicity
-    if multiplicity > len(all_sites):
-        print(f"Warning: Multiplicity ({multiplicity}) exceeds number of available sites ({len(all_sites)})")
-        return []
-    
-    # Get all combinations without repetition
-    site_combinations = list(combinations(all_sites, multiplicity))
-    total_combinations = len(site_combinations)
-    print(f"Total possible combinations for multiplicity {multiplicity}: {total_combinations}")
-    
-    # Sample random subset if max_samples is specified and we have more combinations than requested
-    if max_samples is not None and total_combinations > max_samples:
-        site_combinations = random.sample(site_combinations, max_samples)
-        print(f"Randomly sampled {max_samples} combinations out of {total_combinations}")
+    finder = AdsorbateSiteFinder(slab)
+    sites = finder.find_adsorption_sites()
+
+    if "all_positions" in sites:
+        site_coords = np.array(sites["all_positions"])
     else:
-        print(f"Using all {total_combinations} combinations")
-    
-    # Create structures for each combination
-    structures = []
-    for i, site_combo in enumerate(site_combinations):
-        try:
-            # Start with a fresh copy of the original structure for each combination
-            new_structure = structure.copy()
-            
-            # Check if sites are too close to each other (optional distance check)
-            if multiplicity > 1:
-                coords = [site['coord'] for site in site_combo]
-                if not _check_site_distances(coords, min_distance=distance):
-                    continue  # Skip this combination if sites are too close
-            
-            # Create a fresh finder for this combination
-            combination_finder = AdsorbateSiteFinder(new_structure)
-            
-            # Add adsorbates to all sites in this combination
-            for site in site_combo:
-                new_structure = combination_finder.add_adsorbate(
-                    molecule=molecule,
-                    ads_coord=site['coord'],
-                    repeat=None,
-                    translate=True,
-                    reorient=True
-                )
-                # Update finder with the new structure for the next adsorbate in this combination
-                combination_finder = AdsorbateSiteFinder(new_structure)
-            
-            # Store structure with metadata
-            structure_info = {
-                'structure': new_structure,
-                'sites': site_combo,
-                'combination_id': i,
-                'site_types': [site['type'] for site in site_combo],
-                'site_coords': [site['coord'] for site in site_combo]
-            }
-            structures.append(structure_info)
-            
-        except Exception as e:
-            print(f"Warning: Failed to create structure for combination {i}: {str(e)}")
+        site_coords = np.array(sites["all"])
+
+    combos = combinations(range(len(site_coords)), multiplicity)
+    final_structures = []
+
+    for combo in combos:
+        coords = site_coords[list(combo)]
+
+        # distance filtering
+        ok = True
+        for i in range(len(coords)):
+            for j in range(i + 1, len(coords)):
+                if np.linalg.norm(coords[i] - coords[j]) < distance:
+                    ok = False
+                    break
+            if not ok:
+                break
+        if not ok:
             continue
-    
-    print(f"Successfully created {len(structures)} structures")
-    return structures
+
+        # build structure with multiple adsorbates
+        struct = slab.copy()
+
+        for idx in combo:
+            asf = AdsorbateSiteFinder(struct)  # IMPORTANT: rebuild each time
+            struct = asf.add_adsorbate(molecule, site_coords[idx])
+
+        final_structures.append(struct)
+
+    return final_structures
 
 
 def _check_site_distances(coords: list[np.ndarray], min_distance: float) -> bool:
@@ -216,35 +149,6 @@ def _check_site_distances(coords: list[np.ndarray], min_distance: float) -> bool
             if dist < min_distance:
                 return False
     return True
-
-def extract_structures_only(structure_info_list: list) -> list[Structure]:
-    """
-    Extract just the Structure objects from the detailed structure info list.
-    
-    Args:
-        structure_info_list: List of dictionaries containing structure info
-    
-    Returns:
-        list: List of Structure objects only
-    """
-    return [info['structure'] for info in structure_info_list]
-
-def filter_by_site_type(structure_info_list: list, allowed_types: list[str]) -> list:
-    """
-    Filter structures to only include those with specified site types.
-    
-    Args:
-        structure_info_list: List of structure info dictionaries
-        allowed_types: List of site types to keep (e.g., ['ontop', 'bridge'])
-    
-    Returns:
-        list: Filtered structure info list
-    """
-    filtered = []
-    for info in structure_info_list:
-        if all(site_type in allowed_types for site_type in info['site_types']):
-            filtered.append(info)
-    return filtered
 
 
 def write_directories(structures: list[Structure], directory: str, reference_incar_path: str = None) -> None:
@@ -283,13 +187,6 @@ def main():
     parser.add_argument("--multiple", type=int, default=None, help="Number of adsorbates to add")
     parser.add_argument("--min-distance", type=float, default=2.0, 
                        help="Minimum distance between adsorbates in multiple adsorption")
-    parser.add_argument("--max-samples", type=int, default=None,
-                          help="Maximum number of structures to generate for multiple adsorption (None for all)")
-    parser.add_argument("--random-seed", type=int, default=None,
-                            help="Random seed for reproducible sampling (None for random)")
-    parser.add_argument("--sites", type=str, nargs='+', default=['ontop', 'bridge', 'hollow'],
-                       choices=['ontop', 'bridge', 'hollow'],
-                       help="Types of adsorption sites to consider (e.g., --sites ontop bridge)")
     args = parser.parse_args()
 
     structure = Structure.from_file(args.structure)
@@ -302,39 +199,19 @@ def main():
     #generate adsorbed structures
     if args.multiple:
         # Use comprehensive sampling for multiple adsorptions
-        structure_info_list = adsorb_sampling(
+        adsorbed_structures = adsorb_sampling(
             structure, 
             molecule, 
             args.multiple, 
-            max_samples=args.max_samples,
-            random_seed=args.random_seed,
             distance=args.min_distance,
             supercell=args.supercell,
-            positions=tuple(args.sites)  # Use the specified site types
         )
         
-        # Optional: Further filter by site types if needed
-        # structure_info_list = filter_by_site_type(structure_info_list, args.sites)
-        
-        # Extract just the structures for writing directories
-        adsorbed_structures = extract_structures_only(structure_info_list)
-        
-        # Write structures to directories
         directory_name = f"adsorbed_{args.molecule}_x{args.multiple}"
         write_directories(adsorbed_structures, directory_name, reference_incar_path=args.incar)
         
         print(f"Generated {len(adsorbed_structures)} structures with {args.multiple} {args.molecule} adsorbates")
         
-        # Print summary of site types used
-        site_type_summary = {}
-        for info in structure_info_list:
-            site_types_key = tuple(sorted(info['site_types']))
-            site_type_summary[site_types_key] = site_type_summary.get(site_types_key, 0) + 1
-        
-        print("\nSite type combinations:")
-        for site_combo, count in site_type_summary.items():
-            print(f"  {site_combo}: {count} structures")
-    
     else:
         # Use original single adsorption method
         adsorbed_structures = adsorb(
