@@ -26,6 +26,7 @@ slabgen = "tinykit.slabgen:main"
 "charge" = "tinykit.charge:main"
 "stmplot" = "tinykit.stmplot:main"
 "deploy" = "tinykit.deploy:main"
+"surfind" = "tinykit.surfind:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]
