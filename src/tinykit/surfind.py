@@ -1,20 +1,41 @@
 #!/usr/bin/env python3
 import argparse
+import logging
 import numpy as np
+import sys
 from pymatgen.core import Structure
 from pymatgen.io.vasp import Procar, Outcar
 
+# Configure Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%H:%M:%S"
+)
+logger = logging.getLogger(__name__)
+
 def get_surface_character(structure_path, procar_path, outcar_path, 
                           layer_tolerance=1.0, target_k_idx=None, energy_window=1.0):
-    """
-    Analyzes surface character with corrected indexing and energy filtering.
-    """
-    struct = Structure.from_file(structure_path)
-    procar = Procar(procar_path)
-    outcar = Outcar(outcar_path)
-    e_fermi = outcar.efermi
+    
+    # 1. Load Files
+    try:
+        struct = Structure.from_file(structure_path)
+        procar = Procar(procar_path)
+        outcar = Outcar(outcar_path)
+    except Exception as e:
+        logger.error(f"Failed to load VASP files: {e}")
+        sys.exit(1)
 
-    # Calculate surface normal and projections
+    # 2. Safety check for Fermi Level
+    e_fermi = outcar.efermi
+    if e_fermi is None:
+        logger.error(f"Fermi level not found in {outcar_path}. Is the calculation finished?")
+        sys.exit(1)
+    
+    logger.info(f"Fermi Level: {e_fermi:.4f} eV")
+    logger.info(f"Filtering states within ±{energy_window} eV of Fermi.")
+
+    # 3. Geometry Logic
     a, b = struct.lattice.matrix[0], struct.lattice.matrix[1]
     normal = np.cross(a, b)
     normal /= np.linalg.norm(normal)
@@ -31,14 +52,13 @@ def get_surface_character(structure_path, procar_path, outcar_path,
         i for i, val in enumerate(projections)
         if any(np.isclose(val, layer, atol=layer_tolerance) for layer in surface_layers)
     ]
-
-    print(f"Fermi Level: {e_fermi:.4f} eV")
-    print(f"Filtering for states within ±{energy_window} eV of Fermi.")
+    
+    logger.debug(f"Identified {len(surface_atom_indices)} atoms in the top 3 surface layers.")
 
     results = []
 
+    # 4. Projection Analysis
     for spin, data in procar.data.items():
-        # Calculate intensity for all bands/k-points at once for this spin
         # data shape: (nkpoints, nbands, nions, norbitals)
         surface_intensity = np.sum(data[:, :, surface_atom_indices, :], axis=(2, 3))
 
@@ -49,7 +69,6 @@ def get_surface_character(structure_path, procar_path, outcar_path,
                 energy_raw = procar.eigenvalues[spin][k_idx, b_idx]
                 e_relative = energy_raw - e_fermi
                 
-                # Energy Filter
                 if abs(e_relative) <= energy_window:
                     results.append({
                         'spin': spin,
@@ -63,12 +82,13 @@ def get_surface_character(structure_path, procar_path, outcar_path,
     return sorted(results, key=lambda x: x['surface_char'], reverse=True)
 
 def print_results(results, length=20):
-    """Prints results in a clean fashion"""
     if not results:
-        print("No states found within the specified energy window.")
+        logger.warning("No states found within the specified energy window.")
         return
 
-    print(f"\n{'Spin':<10} | {'Band':<5} | {'K-idx':<6} | {'E-Ef (eV)':<10} | {'Surface Char'}")
+    # Using standard print for the table to keep it clean, or logger.info for consistency
+    header = f"\n{'Spin':<10} | {'Band':<5} | {'K-idx':<6} | {'E-Ef (eV)':<10} | {'Surface Char'}"
+    print(header)
     print("-" * 65)
     for state in results[:length]: 
         print(f"{str(state['spin']):<10} | {state['band_index']:<5} | "
@@ -76,40 +96,26 @@ def print_results(results, length=20):
               f"{state['surface_char']:.4f}")
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Analyze VASP outputs to find surface-localized states near the Fermi level."
-    )
-
-    # File paths
-    parser.add_argument("-s", "--structure", default="CONTCAR", help="Path to structure file (default: CONTCAR)")
-    parser.add_argument("-p", "--procar", default="PROCAR", help="Path to PROCAR file (default: PROCAR)")
-    parser.add_argument("-o", "--outcar", default="OUTCAR", help="Path to OUTCAR file (default: OUTCAR)")
-
-    # Analysis parameters
-    parser.add_argument("-w", "--window", type=float, default=1.0, help="Energy window around Fermi level in eV (default: 1.0)")
-    parser.add_argument("-t", "--tolerance", type=float, default=1.0, help="Layer grouping tolerance in Angstroms (default: 1.0)")
-    parser.add_argument("-k", "--kidx", type=int, default=None, help="Specific K-point index to analyze (default: all)")
-    parser.add_argument("-n", "--num", type=int, default=20, help="Number of results to display (default: 20)")
+    parser = argparse.ArgumentParser(description="Analyze VASP outputs to find surface-localized states.")
+    parser.add_argument("-s", "--structure", default="CONTCAR")
+    parser.add_argument("-p", "--procar", default="PROCAR")
+    parser.add_argument("-o", "--outcar", default="OUTCAR")
+    parser.add_argument("-w", "--window", type=float, default=1.0)
+    parser.add_argument("-t", "--tolerance", type=float, default=1.0)
+    parser.add_argument("-k", "--kidx", type=int, default=None)
+    parser.add_argument("-n", "--num", type=int, default=20)
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logs")
 
     args = parser.parse_args()
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
 
-    # Execute main logic
-    try:
-        results = get_surface_character(
-            structure_path=args.structure,
-            procar_path=args.procar,
-            outcar_path=args.outcar,
-            layer_tolerance=args.tolerance,
-            target_k_idx=args.kidx,
-            energy_window=args.window
-        )
-        
-        print_results(results, length=args.num)
-        
-    except FileNotFoundError as e:
-        print(f"Error: Could not find file - {e.filename}")
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    results = get_surface_character(
+        args.structure, args.procar, args.outcar,
+        args.tolerance, args.kidx, args.window
+    )
+    
+    print_results(results, length=args.num)
 
 if __name__ == "__main__":
     main()
