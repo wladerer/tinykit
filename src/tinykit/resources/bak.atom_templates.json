@@ -1,8 +1,8 @@
 {
     "H": {
-        "color": "#274AB3",
-        "radius": 1.25,
-        "avg_ionic_radius": 1.75
+        "color": "#EDEADE",
+        "radius": 0.25,
+        "avg_ionic_radius": 0.0
     },
     "He": {
         "color": "#D9FFFF",
@@ -26,7 +26,7 @@
     },
     "C": {
         "color": "#909090",
-        "radius": 1.2,
+        "radius": 0.7,
         "avg_ionic_radius": 0.3
     },
     "N": {
@@ -36,7 +36,7 @@
     },
     "O": {
         "color": "#FF0D0D",
-        "radius": 1.2,
+        "radius": 0.6,
         "avg_ionic_radius": 1.26
     },
     "F": {

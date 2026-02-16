@@ -438,6 +438,7 @@ def parse_args():
         epilog="Example: python slabgen.py POSCAR --hkl 111 --layers 2 --freeze-mode bottom"
     )
     
+<<<<<<< Updated upstream
     # Mutually exclusive group for Miller index specification
     miller_group = parser.add_mutually_exclusive_group(required=True)
     miller_group.add_argument(
@@ -510,6 +511,25 @@ def parse_args():
         action='store_true',
         help='Enable verbose (DEBUG) logging'
     )
+=======
+    # Command-line arguments
+    parser.add_argument('structure', type=str,
+                        help='Path to the structure file')
+    parser.add_argument('--hkl', type=str, default=None,
+                        help='Specific Miller index (e.g., "201" or "-201" or "2,0,1")')
+    parser.add_argument('-m', '--max-hkl', type=int, default=None,
+                        help='Max Miller index for automatic generation (default: None)')
+    parser.add_argument('-t','--thicknesses', type=float, nargs='+', default=[12],
+                        help='Slab thicknesses to generate (default: [12])')
+    parser.add_argument('--vacuum', type=float, default=15.0,
+                        help='Vacuum thicknesses to add (default: 15 Angstrom )')
+    parser.add_argument('--layers_to_relax', type=int, default=3,
+                        help='Number of layers to relax (default: 3)')
+    parser.add_argument('-u', '--unit_planes', action='store_true', default=False, 
+                        help='Use in unit planes for slab thickness')
+    parser.add_argument('-d', "--directory",default='GeneratedSlabs', 
+                        help='parent directory of all slabs',type=str)
+>>>>>>> Stashed changes
     
     return parser.parse_args()
 
