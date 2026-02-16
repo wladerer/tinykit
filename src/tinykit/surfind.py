@@ -14,8 +14,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def get_surface_character(structure_path, procar_path, outcar_path, 
-                          layer_tolerance=1.0, target_k_idx=None, energy_window=1.0):
+def get_surface_character(structure_path, procar_path, outcar_path, layer_tolerance=1.0, target_k_idx=None, energy_window=1.0, layers: int = 2):
     
     # 1. Load Files
     try:
@@ -46,8 +45,7 @@ def get_surface_character(structure_path, procar_path, outcar_path,
     unique_projections = np.unique(np.round(projections / layer_tolerance) * layer_tolerance)
     unique_projections.sort()
 
-    # Define Surface Indices (Top 3 layers)
-    surface_layers = unique_projections[-3:]
+    surface_layers = unique_projections[-1*layers:]
     surface_atom_indices = [
         i for i, val in enumerate(projections)
         if any(np.isclose(val, layer, atol=layer_tolerance) for layer in surface_layers)
@@ -100,10 +98,11 @@ def main():
     parser.add_argument("-s", "--structure", default="CONTCAR")
     parser.add_argument("-p", "--procar", default="PROCAR")
     parser.add_argument("-o", "--outcar", default="OUTCAR")
-    parser.add_argument("-w", "--window", type=float, default=1.0)
-    parser.add_argument("-t", "--tolerance", type=float, default=1.0)
-    parser.add_argument("-k", "--kidx", type=int, default=None)
+    parser.add_argument("-w", "--window", type=float, default=1.0, help="Window of energy above and below fermi level to search")
+    parser.add_argument("-t", "--tolerance", type=float, default=1.0, help="Distance tolerance for layers in Angstrom")
+    parser.add_argument("-k", "--kidx", type=int, default=None, help="Index of Kpoint of interest")
     parser.add_argument("-n", "--num", type=int, default=20)
+    parser.add_argument("-l", "--layers", type=int, default=2, help="Number of layers considered surface")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logs")
 
     args = parser.parse_args()
@@ -112,7 +111,7 @@ def main():
 
     results = get_surface_character(
         args.structure, args.procar, args.outcar,
-        args.tolerance, args.kidx, args.window
+        args.tolerance, args.kidx, args.window, args.layers
     )
     
     print_results(results, length=args.num)
