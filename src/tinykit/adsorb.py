@@ -7,6 +7,7 @@ from pymatgen.io.vasp.sets import VaspInput
 from pymatgen.core.structure import Structure, Molecule
 from pymatgen.transformations.standard_transformations import SupercellTransformation
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from itertools import combinations
 import argparse
 import random
@@ -49,25 +50,18 @@ def create_single_atom_molecule(element: str) -> Molecule:
     """Creates a single atom molecule from an element symbol"""
     from pymatgen.core import Element
 
-    # Validate element symbol
     try:
         Element(element)
     except ValueError:
         raise ValueError(f"Invalid element symbol: {element}")
 
-    # Create molecule with single atom at origin
-    species = [element]
-    coords = [[0.0, 0.0, 0.0]]
-    molecule = Molecule(species, coords)
-
-    return molecule
+    return Molecule([element], [[0.0, 0.0, 0.0]])
 
 def get_molecule(molecule_input: str) -> Molecule:
     """Get molecule from either the JSON file or create a single atom molecule"""
     if molecule_input in molecules:
         return molecules[molecule_input]
     else:
-        # Try to create a single atom molecule
         try:
             return create_single_atom_molecule(molecule_input)
         except ValueError as e:
@@ -80,94 +74,205 @@ def adsorb(structure: Structure, molecule: Molecule, supercell: list[int,int,int
     """generates a list of adsorbed structures"""
     finder = AdsorbateSiteFinder(structure)
     adsorbed_structures = finder.generate_adsorption_structures(molecule, repeat=supercell, find_args=find_args)
-
     return adsorbed_structures
+
+
+# ---------------------------------------------------------------------------
+# Site labeling
+# ---------------------------------------------------------------------------
+
+_TYPE_PREFIX = {"ontop": "T", "bridge": "B", "hollow": "H"}
+
+def label_adsorption_sites(slab: Structure) -> list[dict]:
+    """
+    Return labeled adsorption sites for a slab.
+
+    Each entry is a dict with:
+      'coord'  – Cartesian coordinates (np.ndarray)
+      'type'   – 'ontop', 'bridge', or 'hollow'
+      'label'  – short string like 'T0', 'B2', 'H1'
+    """
+    finder = AdsorbateSiteFinder(slab)
+    sites = finder.find_adsorption_sites()
+
+    labeled = []
+    for site_type, prefix in _TYPE_PREFIX.items():
+        for idx, coord in enumerate(sites.get(site_type, [])):
+            labeled.append({
+                "coord": np.array(coord),
+                "type": site_type,
+                "label": f"{prefix}{idx}",
+            })
+
+    return labeled
+
+
+# ---------------------------------------------------------------------------
+# Symmetry reduction
+# ---------------------------------------------------------------------------
+
+def symmetry_reduce_combos(
+    slab: Structure,
+    site_coords: np.ndarray,
+    combos: list[tuple],
+    symprec: float = 0.1,
+) -> list[tuple]:
+    """
+    Return a symmetry-reduced subset of combos.
+
+    Two combos are considered equivalent if a symmetry operation of the clean
+    slab maps one set of site positions onto the other (modulo lattice
+    translation in the surface plane).
+
+    Args:
+        slab:        Clean slab structure (no adsorbates).
+        site_coords: Cartesian coords array of shape (N_sites, 3).
+        combos:      List of index tuples into site_coords.
+        symprec:     Tolerance passed to SpacegroupAnalyzer.
+
+    Returns:
+        Subset of combos with one representative per symmetry class.
+    """
+    analyzer = SpacegroupAnalyzer(slab, symprec=symprec)
+    sym_ops = analyzer.get_symmetry_operations(cartesian=False)  # fractional
+
+    lattice = slab.lattice
+    frac_coords = np.array([lattice.get_fractional_coords(c) for c in site_coords])
+
+    seen: set[tuple] = set()
+    unique: list[tuple] = []
+
+    for combo in combos:
+        coords_frac = frac_coords[list(combo)]  # (k, 3)
+
+        # Compute canonical key = lexicographic minimum over all sym-op images.
+        canonical = None
+        for op in sym_ops:
+            # Apply rotation + translation in fractional space.
+            transformed = (op.rotation_matrix @ coords_frac.T).T + op.translation_vector
+            # Reduce xy periodically (surface plane); leave z alone.
+            transformed[:, :2] %= 1.0
+            key = tuple(map(tuple, np.round(np.sort(transformed, axis=0), decimals=3)))
+            if canonical is None or key < canonical:
+                canonical = key
+
+        if canonical not in seen:
+            seen.add(canonical)
+            unique.append(combo)
+
+    return unique
+
+
+# ---------------------------------------------------------------------------
+# Multi-adsorbate sampling
+# ---------------------------------------------------------------------------
 
 def adsorb_sampling(
     slab: Structure,
     molecule: Molecule,
     multiplicity: int,
-    distance: float = 1.5,
-    supercell=None
-):
+    min_distance: float = 2.0,
+    supercell: list[int] = None,
+    symmetry_reduce: bool = True,
+    symprec: float = 0.1,
+) -> tuple[list[Structure], list[str]]:
+    """
+    Generate all (symmetry-reduced) structures with `multiplicity` adsorbates.
+
+    Site coordinates are determined once from the clean (optionally supercelled)
+    slab and then used for all combinations — the AdsorbateSiteFinder is NOT
+    rebuilt between placements, which avoids drifting site positions.
+
+    Returns:
+        (structures, combo_labels) where combo_labels[i] is a string like
+        'H0+T2' describing which sites were used in structures[i].
+    """
     if supercell is not None:
         slab = slab.copy()
         slab.make_supercell(supercell)
 
-    finder = AdsorbateSiteFinder(slab)
-    sites = finder.find_adsorption_sites()
+    labeled_sites = label_adsorption_sites(slab)
+    if not labeled_sites:
+        return [], []
 
-    if "all_positions" in sites:
-        site_coords = np.array(sites["all_positions"])
-    else:
-        site_coords = np.array(sites["all"])
+    site_coords = np.array([s["coord"] for s in labeled_sites])
+    site_labels = [s["label"] for s in labeled_sites]
 
-    combos = combinations(range(len(site_coords)), multiplicity)
-    final_structures = []
+    # All combinations of `multiplicity` distinct sites.
+    all_combos = list(combinations(range(len(site_coords)), multiplicity))
 
-    for combo in combos:
-        coords = site_coords[list(combo)]
+    # Distance filter.
+    valid_combos = [
+        combo for combo in all_combos
+        if _check_site_distances(site_coords[list(combo)], min_distance)
+    ]
 
-        # distance filtering
-        ok = True
-        for i in range(len(coords)):
-            for j in range(i + 1, len(coords)):
-                if np.linalg.norm(coords[i] - coords[j]) < distance:
-                    ok = False
-                    break
-            if not ok:
-                break
-        if not ok:
-            continue
+    # Symmetry reduction.
+    if symmetry_reduce and len(valid_combos) > 1:
+        valid_combos = symmetry_reduce_combos(slab, site_coords, valid_combos, symprec=symprec)
 
-        # build structure with multiple adsorbates
+    # Build structures.
+    structures = []
+    combo_labels = []
+
+    for combo in valid_combos:
         struct = slab.copy()
+        asf = AdsorbateSiteFinder(struct)
 
         for idx in combo:
-            asf = AdsorbateSiteFinder(struct)  # IMPORTANT: rebuild each time
             struct = asf.add_adsorbate(molecule, site_coords[idx])
+            # Rebuild ASF on updated struct so surface detection stays correct,
+            # but keep using the original site_coords (from the clean slab).
+            asf = AdsorbateSiteFinder(struct)
 
-        final_structures.append(struct)
+        structures.append(struct)
+        label = "+".join(site_labels[i] for i in sorted(combo))
+        combo_labels.append(label)
 
-    return final_structures
+    return structures, combo_labels
 
 
-def _check_site_distances(coords: list[np.ndarray], min_distance: float) -> bool:
-    """
-    Check if all sites are at least min_distance apart.
-    
-    Args:
-        coords: List of coordinate arrays
-        min_distance: Minimum allowed distance between sites
-    
-    Returns:
-        bool: True if all distances are acceptable, False otherwise
-    """
+def _check_site_distances(coords: np.ndarray, min_distance: float) -> bool:
+    """Return True if all pairwise distances between coords exceed min_distance."""
     for i in range(len(coords)):
         for j in range(i + 1, len(coords)):
-            dist = np.linalg.norm(coords[i] - coords[j])
-            if dist < min_distance:
+            if np.linalg.norm(coords[i] - coords[j]) < min_distance:
                 return False
     return True
 
 
-def write_directories(structures: list[Structure], directory: str, reference_incar_path: str = None) -> None:
-    """writes each structure to its own directory"""
+# ---------------------------------------------------------------------------
+# Output
+# ---------------------------------------------------------------------------
+
+def write_directories(
+    structures: list[Structure],
+    directory: str,
+    names: list[str] = None,
+    reference_incar_path: str = None,
+) -> None:
+    """
+    Write each structure to its own subdirectory.
+
+    Args:
+        structures:          List of structures to write.
+        directory:           Parent directory path.
+        names:               Per-structure subdirectory names. Falls back to
+                             'adsorb_{index}' if not provided.
+        reference_incar_path: Path to a reference INCAR; uses built-in defaults
+                             if None.
+    """
     for index, structure in enumerate(structures):
-        path = Path(directory) / f"adsorb_{index}"
+        subdir_name = names[index] if (names and index < len(names)) else f"adsorb_{index}"
+        path = Path(directory) / subdir_name
         path.mkdir(parents=True, exist_ok=True)
 
         poscar = Poscar(structure)
         potcar = Potcar(symbols=poscar.site_symbols, functional="PBE")
 
         if reference_incar_path:
-            try:
-                # Convert to Path object and resolve
-                ref_path = Path(reference_incar_path)
-                resolved_path = ref_path.resolve(strict=True)
-                incar = Incar.from_file(resolved_path)
-            except FileNotFoundError:
-                raise FileNotFoundError(f"Reference INCAR file not found: {reference_incar_path}")
+            ref_path = Path(reference_incar_path).resolve(strict=True)
+            incar = Incar.from_file(ref_path)
         else:
             incar = Incar.from_dict(incar_dict)
 
@@ -175,7 +280,6 @@ def write_directories(structures: list[Structure], directory: str, reference_inc
         input_set.write_input(path)
 
 def main():
-    #create an argparser to get structure from file and molecule from command line
     parser = argparse.ArgumentParser(description="Generate adsorbed structures")
     parser.add_argument("structure", type=str, help="Path to structure file")
     parser.add_argument("molecule", type=str,
@@ -185,8 +289,10 @@ def main():
                        help="Distance between adsorbate center of mass and surface site")
     parser.add_argument("--incar", type=str, default=None, help="Path to reference INCAR file")
     parser.add_argument("--multiple", type=int, default=None, help="Number of adsorbates to add")
-    parser.add_argument("--min-distance", type=float, default=2.0, 
+    parser.add_argument("--min-distance", type=float, default=2.0,
                        help="Minimum distance between adsorbates in multiple adsorption")
+    parser.add_argument("--no-symmetry-reduce", action="store_true",
+                       help="Skip symmetry reduction for multiple adsorbate sampling")
     args = parser.parse_args()
 
     structure = Structure.from_file(args.structure)
@@ -196,29 +302,32 @@ def main():
         print(f"Error: {e}")
         return
 
-    #generate adsorbed structures
     if args.multiple:
-        # Use comprehensive sampling for multiple adsorptions
-        adsorbed_structures = adsorb_sampling(
-            structure, 
-            molecule, 
-            args.multiple, 
-            distance=args.min_distance,
-            supercell=args.supercell,
+        structures, combo_labels = adsorb_sampling(
+            structure,
+            molecule,
+            args.multiple,
+            min_distance=args.min_distance,
+            supercell=args.supercell if args.supercell != [1,1,1] else None,
+            symmetry_reduce=not args.no_symmetry_reduce,
         )
-        
-        directory_name = f"adsorbed_{args.molecule}_x{args.multiple}"
-        write_directories(adsorbed_structures, directory_name, reference_incar_path=args.incar)
-        
-        print(f"Generated {len(adsorbed_structures)} structures with {args.multiple} {args.molecule} adsorbates")
-        
+
+        mol_tag = args.molecule
+        parent_dir = f"adsorbed_{mol_tag}_x{args.multiple}"
+        # Subdirectory names encode the molecule, multiplicity, and site combo.
+        names = [f"{mol_tag}_x{args.multiple}_{label}" for label in combo_labels]
+
+        write_directories(structures, parent_dir, names=names, reference_incar_path=args.incar)
+        print(f"Generated {len(structures)} structures with {args.multiple} {args.molecule} adsorbates")
+        for name in names:
+            print(f"  {parent_dir}/{name}")
+
     else:
-        # Use original single adsorption method
         adsorbed_structures = adsorb(
-            structure, 
-            molecule, 
-            args.supercell, 
-            distance=args.distance
+            structure,
+            molecule,
+            args.supercell,
+            distance=args.distance,
         )
         write_directories(adsorbed_structures, f"adsorbed_{args.molecule}", reference_incar_path=args.incar)
         print(f"Generated {len(adsorbed_structures)} adsorbed structures for {args.molecule}")

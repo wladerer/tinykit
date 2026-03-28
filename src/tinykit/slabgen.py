@@ -16,25 +16,24 @@ from pymatgen.core.surface import Slab, SlabGenerator, generate_all_slabs
 def setup_logging(verbose: bool = False):
     """
     Set up logging configuration.
-    
+
     Args:
         verbose: Enable verbose (DEBUG) logging
     """
     log_level = logging.DEBUG if verbose else logging.INFO
-    
-    # Create formatters
-    detailed_formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-    # Show level in console when verbose for clarity
+
     if verbose:
         console_formatter = logging.Formatter('[%(levelname)s] %(message)s')
     else:
         console_formatter = logging.Formatter('%(message)s')
 
+    handler = logging.StreamHandler()
+    handler.setFormatter(console_formatter)
+
     logger = logging.getLogger()
-    
+    logger.setLevel(log_level)
+    logger.addHandler(handler)
+
     return logger
 
 
@@ -104,7 +103,7 @@ def apply_selective_dynamics(
     projections = np.dot(positions, normal)
     
     # Identify distinct layers (decimals=0 for coarse grouping)
-    unique_projections = np.unique(np.round(projections, decimals=0))
+    unique_projections = np.unique(np.round(projections, decimals=1))
     unique_projections.sort()
     nlayers = len(unique_projections)
     
@@ -145,7 +144,7 @@ def apply_selective_dynamics(
         logger.debug(f"  Bottom threshold: {bottom_threshold:.2f}, Top threshold: {top_threshold:.2f}")
         
         for site in slab.sites:
-            proj = np.round(np.dot(site.coords, normal), decimals=0)
+            proj = np.round(np.dot(site.coords, normal), decimals=1)
             # Relax top and bottom layers
             if proj <= bottom_threshold or proj >= top_threshold:
                 site.properties["selective_dynamics"] = [True, True, True]
@@ -159,7 +158,7 @@ def apply_selective_dynamics(
         logger.debug(f"  Freeze threshold: {freeze_threshold:.2f}")
         
         for site in slab.sites:
-            proj = np.round(np.dot(site.coords, normal), decimals=0)
+            proj = np.round(np.dot(site.coords, normal), decimals=1)
             # Freeze bottom layers, relax upper layers
             if proj <= freeze_threshold:
                 site.properties["selective_dynamics"] = [False, False, False]
@@ -173,7 +172,7 @@ def apply_selective_dynamics(
         logger.debug(f"  Freeze threshold: {freeze_threshold:.2f}")
         
         for site in slab.sites:
-            proj = np.round(np.dot(site.coords, normal), decimals=0)
+            proj = np.round(np.dot(site.coords, normal), decimals=1)
             # Freeze top layers, relax lower layers
             if proj >= freeze_threshold:
                 site.properties["selective_dynamics"] = [False, False, False]
@@ -280,10 +279,22 @@ def write_slab_directories(
         if layers_to_relax is not None:
             logger.debug(f"  Applying selective dynamics...")
             slab = apply_selective_dynamics(slab, layers_to_relax, mode=freeze_mode)
-        
-        # Now sort by species for consistent POSCAR formatting
-        # Note: Coordinates don't change, just the order in the file
-        slab = slab.get_sorted_structure(key=lambda s: s.species_string)
+
+        # Sort by species for consistent POSCAR formatting.
+        # get_sorted_structure returns a plain Structure in some pymatgen versions,
+        # losing Slab attributes (miller_index, is_symmetric, etc.).
+        # Reconstruct as Slab explicitly to be safe.
+        sorted_struct = slab.get_sorted_structure(key=lambda s: s.species_string)
+        slab = Slab(
+            lattice=sorted_struct.lattice,
+            species=sorted_struct.species,
+            coords=sorted_struct.frac_coords,
+            miller_index=slab.miller_index,
+            oriented_unit_cell=slab.oriented_unit_cell,
+            shift=slab.shift,
+            scale_factor=slab.scale_factor,
+            site_properties=sorted_struct.site_properties,
+        )
 
         # Create a unique identifier for this slab based on structure
         # Use fractional coordinates and species to identify duplicates
@@ -438,7 +449,6 @@ def parse_args():
         epilog="Example: python slabgen.py POSCAR --hkl 111 --layers 2 --freeze-mode bottom"
     )
     
-<<<<<<< Updated upstream
     # Mutually exclusive group for Miller index specification
     miller_group = parser.add_mutually_exclusive_group(required=True)
     miller_group.add_argument(
@@ -461,8 +471,8 @@ def parse_args():
         '-t', '--thicknesses',
         type=float,
         nargs='+',
-        default=[12],
-        help='Slab thicknesses (Angstroms or unit planes with -u, default: [12])'
+        default=[8],
+        help='Slab thicknesses (Angstroms or unit planes with -u, default: [8])'
     )
     parser.add_argument(
         '--vacuum',
@@ -511,26 +521,6 @@ def parse_args():
         action='store_true',
         help='Enable verbose (DEBUG) logging'
     )
-=======
-    # Command-line arguments
-    parser.add_argument('structure', type=str,
-                        help='Path to the structure file')
-    parser.add_argument('--hkl', type=str, default=None,
-                        help='Specific Miller index (e.g., "201" or "-201" or "2,0,1")')
-    parser.add_argument('-m', '--max-hkl', type=int, default=None,
-                        help='Max Miller index for automatic generation (default: None)')
-    parser.add_argument('-t','--thicknesses', type=float, nargs='+', default=[12],
-                        help='Slab thicknesses to generate (default: [12])')
-    parser.add_argument('--vacuum', type=float, default=15.0,
-                        help='Vacuum thicknesses to add (default: 15 Angstrom )')
-    parser.add_argument('--layers_to_relax', type=int, default=3,
-                        help='Number of layers to relax (default: 3)')
-    parser.add_argument('-u', '--unit_planes', action='store_true', default=False, 
-                        help='Use in unit planes for slab thickness')
-    parser.add_argument('-d', "--directory",default='GeneratedSlabs', 
-                        help='parent directory of all slabs',type=str)
->>>>>>> Stashed changes
-    
     return parser.parse_args()
 
 
