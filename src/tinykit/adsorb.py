@@ -238,15 +238,19 @@ def adsorb_sampling(
         n_workers:         Number of parallel worker processes.
 
     Returns:
-        (structures, combo_labels) — combo_labels[i] is like 'H0+T2'.
+        (structures, combo_labels, slab, n_slab_atoms) — slab is the
+        (possibly supercelled) clean slab; n_slab_atoms is its atom count,
+        both needed for post-hoc duplicate verification.
     """
     if supercell is not None:
         slab = slab.copy()
         slab.make_supercell(supercell)
 
+    n_slab_atoms = len(slab)
+
     labeled_sites = label_adsorption_sites(slab)
     if not labeled_sites:
-        return [], []
+        return [], [], slab, n_slab_atoms
 
     site_coords = np.array([s["coord"] for s in labeled_sites])
     site_labels = [s["label"] for s in labeled_sites]
@@ -284,7 +288,7 @@ def adsorb_sampling(
             structures.append(struct)
             combo_labels.append("+".join(site_labels[i] for i in sorted(combo)))
 
-    return structures, combo_labels
+    return structures, combo_labels, slab, n_slab_atoms
 
 
 def _check_site_distances(coords: np.ndarray, min_distance: float) -> bool:
@@ -302,72 +306,60 @@ def _check_site_distances(coords: np.ndarray, min_distance: float) -> bool:
 
 def find_duplicate_structures(
     structures: list[Structure],
+    slab: Structure,
+    n_slab_atoms: int,
     labels: list[str] = None,
-    stol: float = 0.3,
-    angle_tol: float = 5.0,
-    n_workers: int = 1,
+    symprec: float = 0.1,
 ) -> list[list[int]]:
     """
     Return groups of structurally equivalent structures (each group has len > 1).
 
-    Uses a two-pass approach for speed:
-      1. Bucket structures by a cheap composition+volume fingerprint.
-      2. Run StructureMatcher only within each bucket.
+    Because all structures share the same base slab, only the adsorbate atom
+    positions (indices n_slab_atoms:) need to be compared. Equivalence is
+    determined by the same canonical-key method used in symmetry_reduce_combos:
+    apply every symmetry operation of the clean slab to the adsorbate fractional
+    coords, reduce xy mod 1, sort rows, take the lexicographic minimum as the
+    key. Duplicate keys = equivalent structures.
+
+    Complexity: O(n_structures × n_sym_ops) — no pairwise comparisons.
 
     Args:
-        structures:  Structures to check.
-        labels:      Optional labels for reporting (parallel to structures).
-        stol:        Site tolerance for StructureMatcher (fractional coords).
-        angle_tol:   Angle tolerance in degrees.
-        n_workers:   Unused currently (StructureMatcher is already fast enough
-                     within small buckets; left for future use).
+        structures:    Structures to check (slab + adsorbates).
+        slab:          Clean slab (used to get symmetry operations).
+        n_slab_atoms:  Number of atoms in the base slab (before adsorbates).
+        labels:        Optional labels for reporting.
+        symprec:       Symmetry tolerance passed to SpacegroupAnalyzer.
 
     Returns:
-        List of groups — each group is a list of indices into `structures`
-        that are symmetry-equivalent. Empty list means no duplicates found.
+        List of duplicate groups; each group is a list of indices into
+        `structures`. Empty list means all structures are unique.
     """
-    from pymatgen.analysis.structure_matcher import StructureMatcher
+    analyzer = SpacegroupAnalyzer(slab, symprec=symprec)
+    sym_ops = analyzer.get_symmetry_operations(cartesian=False)
+    sym_ops_data = [(op.rotation_matrix, op.translation_vector) for op in sym_ops]
 
-    matcher = StructureMatcher(
-        stol=stol,
-        angle_tol=angle_tol,
-        primitive_cell=False,
-        allow_subset=False,
-    )
+    lattice = slab.lattice
+    seen: dict[tuple, int] = {}
+    duplicate_groups: dict[int, list[int]] = {}
 
-    # Bucket by (composition string, rounded volume) to avoid O(n^2) full comparisons.
-    buckets: dict[tuple, list[int]] = {}
-    for i, s in enumerate(structures):
-        key = (s.composition.formula, round(s.volume, 0))
-        buckets.setdefault(key, []).append(i)
+    for i, struct in enumerate(structures):
+        cart_ads = struct.cart_coords[n_slab_atoms:]
+        frac_ads = np.array([lattice.get_fractional_coords(c) for c in cart_ads])
+        key = _compute_canonical_key((frac_ads, sym_ops_data))
 
-    duplicate_groups: list[list[int]] = []
+        if key in seen:
+            first = seen[key]
+            duplicate_groups.setdefault(first, [first]).append(i)
+        else:
+            seen[key] = i
 
-    for indices in buckets.values():
-        if len(indices) < 2:
-            continue
-        bucket_structs = [structures[i] for i in indices]
-        # group_structures returns list-of-lists of equivalent structures (objects, not indices).
-        groups = matcher.group_structures(bucket_structs)
+    groups = list(duplicate_groups.values())
+
+    if labels and groups:
         for group in groups:
-            if len(group) < 2:
-                continue
-            # Map back to original indices.
-            orig_indices = []
-            for s in group:
-                for idx in indices:
-                    if structures[idx] is s:
-                        orig_indices.append(idx)
-                        break
-            if len(orig_indices) > 1:
-                duplicate_groups.append(orig_indices)
+            print(f"  Equivalent: {', '.join(labels[i] for i in group)}")
 
-    if labels:
-        for group in duplicate_groups:
-            group_labels = [labels[i] for i in group]
-            print(f"  Equivalent: {', '.join(group_labels)}")
-
-    return duplicate_groups
+    return groups
 
 
 # ---------------------------------------------------------------------------
@@ -428,7 +420,7 @@ def main():
         return
 
     if args.multiple:
-        structures, combo_labels = adsorb_sampling(
+        structures, combo_labels, clean_slab, n_slab_atoms = adsorb_sampling(
             structure,
             molecule,
             args.multiple,
@@ -449,8 +441,10 @@ def main():
             print(f"  {parent_dir}/{name}")
 
         if args.verify:
-            print("\nVerifying structural uniqueness with StructureMatcher...")
-            dups = find_duplicate_structures(structures, labels=names, n_workers=args.jobs)
+            print("\nVerifying structural uniqueness via adsorbate canonical keys...")
+            dups = find_duplicate_structures(
+                structures, clean_slab, n_slab_atoms, labels=names
+            )
             if dups:
                 print(f"WARNING: found {len(dups)} group(s) of equivalent structures.")
             else:
