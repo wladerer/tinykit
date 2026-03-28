@@ -297,6 +297,80 @@ def _check_site_distances(coords: np.ndarray, min_distance: float) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Duplicate verification
+# ---------------------------------------------------------------------------
+
+def find_duplicate_structures(
+    structures: list[Structure],
+    labels: list[str] = None,
+    stol: float = 0.3,
+    angle_tol: float = 5.0,
+    n_workers: int = 1,
+) -> list[list[int]]:
+    """
+    Return groups of structurally equivalent structures (each group has len > 1).
+
+    Uses a two-pass approach for speed:
+      1. Bucket structures by a cheap composition+volume fingerprint.
+      2. Run StructureMatcher only within each bucket.
+
+    Args:
+        structures:  Structures to check.
+        labels:      Optional labels for reporting (parallel to structures).
+        stol:        Site tolerance for StructureMatcher (fractional coords).
+        angle_tol:   Angle tolerance in degrees.
+        n_workers:   Unused currently (StructureMatcher is already fast enough
+                     within small buckets; left for future use).
+
+    Returns:
+        List of groups — each group is a list of indices into `structures`
+        that are symmetry-equivalent. Empty list means no duplicates found.
+    """
+    from pymatgen.analysis.structure_matcher import StructureMatcher
+
+    matcher = StructureMatcher(
+        stol=stol,
+        angle_tol=angle_tol,
+        primitive_cell=False,
+        allow_subset=False,
+    )
+
+    # Bucket by (composition string, rounded volume) to avoid O(n^2) full comparisons.
+    buckets: dict[tuple, list[int]] = {}
+    for i, s in enumerate(structures):
+        key = (s.composition.formula, round(s.volume, 0))
+        buckets.setdefault(key, []).append(i)
+
+    duplicate_groups: list[list[int]] = []
+
+    for indices in buckets.values():
+        if len(indices) < 2:
+            continue
+        bucket_structs = [structures[i] for i in indices]
+        # group_structures returns list-of-lists of equivalent structures (objects, not indices).
+        groups = matcher.group_structures(bucket_structs)
+        for group in groups:
+            if len(group) < 2:
+                continue
+            # Map back to original indices.
+            orig_indices = []
+            for s in group:
+                for idx in indices:
+                    if structures[idx] is s:
+                        orig_indices.append(idx)
+                        break
+            if len(orig_indices) > 1:
+                duplicate_groups.append(orig_indices)
+
+    if labels:
+        for group in duplicate_groups:
+            group_labels = [labels[i] for i in group]
+            print(f"  Equivalent: {', '.join(group_labels)}")
+
+    return duplicate_groups
+
+
+# ---------------------------------------------------------------------------
 # Output
 # ---------------------------------------------------------------------------
 
@@ -342,6 +416,8 @@ def main():
                         help="Skip symmetry reduction")
     parser.add_argument("-j", "--jobs", type=int, default=1,
                         help="Number of parallel worker processes (default: 1)")
+    parser.add_argument("--verify", action="store_true",
+                        help="After generation, run StructureMatcher to confirm no symmetry-equivalent duplicates")
     args = parser.parse_args()
 
     structure = Structure.from_file(args.structure)
@@ -371,6 +447,14 @@ def main():
         print(f"Generated {len(structures)} structures with {args.multiple} {args.molecule} adsorbates")
         for name in names:
             print(f"  {parent_dir}/{name}")
+
+        if args.verify:
+            print("\nVerifying structural uniqueness with StructureMatcher...")
+            dups = find_duplicate_structures(structures, labels=names, n_workers=args.jobs)
+            if dups:
+                print(f"WARNING: found {len(dups)} group(s) of equivalent structures.")
+            else:
+                print("OK: all structures are symmetry-inequivalent.")
 
     else:
         adsorbed_structures = adsorb(structure, molecule, args.supercell, distance=args.distance)
