@@ -28,6 +28,9 @@ slabgen = "tinykit.slabgen:main"
 "deploy" = "tinykit.deploy:main"
 "surfind" = "tinykit.surfind:main"
 
+[tool.setuptools.package-data]
+tinykit = ["resources/*.json"]
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
