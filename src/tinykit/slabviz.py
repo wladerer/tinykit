@@ -1,49 +1,22 @@
 #!/usr/bin/env python
+"""Render structures and charge-density isosurfaces with POV-Ray."""
 import argparse
 import numpy as np
 import yaml
-import json
 import logging
-from ase.io import read, write
+from ase.io import read
 from ase.calculators.vasp.vasp_auxiliary import VaspChargeDensity
 import os
+
+from tinykit.povray import (
+    resolve_atom_styles, render_structure, add_render_args, povray_settings_from_args,
+)
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(levelname)s: %(message)s'
 )
 logger = logging.getLogger(__name__)
-
-import pathlib
-path = pathlib.Path(__file__).parent.absolute()
-
-atom_template_path = path / 'resources' / 'atom_templates.json'
-with open(atom_template_path, 'r') as f:
-    atom_template = json.load(f)
-
-
-def hex_to_rgb(hex_string):
-    return tuple(int(hex_string.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
-
-default_atom_type_to_color_map = {k: hex_to_rgb(v['color']) for k, v in atom_template.items()}
-default_atom_type_to_radius_map = {k: v['radius'] for k, v in atom_template.items()}
-
-# Convert colors to 0 to 1 scale
-def normalize_colors(atom_colors):
-    return {k: tuple(vv / 255 for vv in v) for k, v in atom_colors.items()}
-
-def array_to_rotation_string(array):
-    return f"{array[0]}x,{array[1]}y,{array[2]}z"
-
-def update_image_extension(string):
-
-    if not string.endswith('.pov') and '.' not in string:
-        return string + '.pov'
-
-    if not string.endswith('.pov'):
-        return string.replace('.png', '.pov')
-
-    return string
 
 
 def load_chgcar_data(chgcar_file):
@@ -139,11 +112,13 @@ def create_isosurface(density, atoms, isovalue, color=(0.5, 0.5, 1.0), transmitt
     }
 
 
-def main():
-    # Argument parser setup
-    parser = argparse.ArgumentParser(description='Visualize VASP structures with custom colors and charge density.')
+def build_parser(parser=None):
+    parser = parser or argparse.ArgumentParser(
+        description='Visualize VASP structures with custom colors and charge density.')
     parser.add_argument('input', help='Input VASP file (CONTCAR, vasprun.xml, or CHGCAR)')
-    parser.add_argument('-c', '--colors', help='YAML file specifying custom colors for atoms', default=None)
+    parser.add_argument('-c', '--colors', '--styles', dest='styles', default=None,
+                        help='YAML file overriding per-element color and/or radius, '
+                             'e.g. "Fe: [255,100,0]" or "C: {radius: 0.75}"')
     parser.add_argument('-o', '--output', help='Output file name', default='slab.png')
     parser.add_argument('--rotation', help='Rotation of the slab', default=[0,0,0], nargs=3, type=float)
     parser.add_argument('--supercell', help='Supercell dimensions', default=[1, 1, 1], nargs=3, type=int)
@@ -163,11 +138,17 @@ def main():
     parser.add_argument('--color-scheme', help='Preset color scheme for dual-phase rendering', 
                        choices=['blue-orange', 'purple-yellow', 'teal-coral', 'green-magenta', 'custom'],
                        default='blue-orange')
-    parser.add_argument('--mesh-refinement', help='Grid interpolation factor for smoother mesh (1=no interpolation, 2=8x points, 3=27x points)', 
+    parser.add_argument('--mesh-refinement', help='Grid interpolation factor for smoother mesh (1=no interpolation, 2=8x points, 3=27x points)',
                        type=int, default=1, choices=[1, 2, 3, 4])
 
-    args = parser.parse_args()
-    
+    add_render_args(parser, default_height=1100)
+    return parser
+
+
+def main(args=None):
+    if not isinstance(args, argparse.Namespace):
+        args = build_parser().parse_args(args)
+
     if args.verbose:
         logger.setLevel(logging.DEBUG)
         logger.debug("Verbose mode enabled")
@@ -208,27 +189,19 @@ def main():
     # Apply supercell to atoms structure
     slab = slab * args.supercell
     
-    atom_type_to_color_map = default_atom_type_to_color_map.copy()
-    if args.colors:
-        with open(args.colors, 'r') as yaml_file:
-            custom_colors = yaml.safe_load(yaml_file)
-            atom_type_to_color_map.update(custom_colors)
+    overrides = None
+    if args.styles:
+        with open(args.styles, 'r') as yaml_file:
+            overrides = yaml.safe_load(yaml_file)
 
-    atom_type_to_color_map = normalize_colors(atom_type_to_color_map)
-    colors = [atom_type_to_color_map[a.symbol] for a in slab]
-    radii = np.array([default_atom_type_to_radius_map[a.symbol] for a in slab]) - 0.4
+    colors, radii = resolve_atom_styles(slab, overrides=overrides, radius_offset=-0.4)
 
-    povray_settings = {
-        'canvas_width': None,  # Width of canvas in pixels
-        'canvas_height': 1100,  # Height of canvas in pixels
-        'camera_dist': 20.,  # Distance from camera to front atom
-        'celllinewidth': 0.0,  # Thickness of cell lines
-        'camera_type'  : 'orthographic', # perspective, ultra_wide_angle
-	    'point_lights' : [], #[(18,20,40), 'White'],[(60,20,40),'White'],             # [[loc1, color1], [loc2, color2],...]
-	    'area_light'   : [(2., 3., 125.), # location
-	                      'White',       # color
-	                      .95, .8, 5, 4], # width, height, Nlamps_x, Nlamps_y
-    }
+    povray_settings = povray_settings_from_args(args, extra={
+        'point_lights': [],
+        'area_light': [(2., 3., 125.),  # location
+                       'White',         # color
+                       .95, .8, 5, 4],  # width, height, Nlamps_x, Nlamps_y
+    })
 
     # Add isosurface if charge density is loaded
     isosurface_data = None
@@ -326,15 +299,11 @@ def main():
             logger.info(f"Data has negative values but --dual-phase not set. Use --dual-phase to render both phases.")
 
 
-    args.output = update_image_extension(args.output)
-    rotation = array_to_rotation_string(args.rotation)
-    
-    renderer = write(args.output, slab, format='pov', colors=colors, rotation=rotation, 
-                    radii=radii, povray_settings=povray_settings, 
-                    isosurface_data=isosurface_data).render()
-
-    os.remove(args.output.replace('.pov', '.ini'))
-    os.remove(args.output.replace('.pov', '.pov'))
+    render_structure(
+        slab, args.output, rotation=args.rotation,
+        colors=colors, radii=radii, povray_settings=povray_settings,
+        isosurface_data=isosurface_data, cleanup=not args.keep_pov,
+    )
 
 if __name__ == "__main__":
     main()

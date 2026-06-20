@@ -1,3 +1,5 @@
+"""Generate surface slabs from a bulk structure and write VASP inputs."""
+
 import argparse
 import warnings
 import json
@@ -5,11 +7,15 @@ import logging
 import numpy as np
 from enum import Enum
 from pathlib import Path
-from datetime import datetime
 
-from pymatgen.io.vasp.inputs import Incar, Kpoints, Poscar, Potcar, VaspInput
 from pymatgen.core.structure import Structure
 from pymatgen.core.surface import Slab, SlabGenerator, generate_all_slabs
+
+from tinykit.vaspio import write_vasp_input
+from tinykit.cli import (
+    add_incar_args, resolve_incar, add_potcar_args,
+    add_kpoints_args, gamma_kpoints, add_overwrite_args,
+)
 
 
 # Configure logging
@@ -27,12 +33,14 @@ def setup_logging(verbose: bool = False):
     else:
         console_formatter = logging.Formatter('%(message)s')
 
-    handler = logging.StreamHandler()
-    handler.setFormatter(console_formatter)
-
     logger = logging.getLogger()
     logger.setLevel(log_level)
-    logger.addHandler(handler)
+
+    # Avoid stacking duplicate handlers if invoked more than once per process.
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(console_formatter)
+        logger.addHandler(handler)
 
     return logger
 
@@ -42,36 +50,6 @@ class FreezingMode(Enum):
     CENTER = "center"  # Relax top and bottom, freeze center
     BOTTOM = "bottom"  # Freeze bottom layers, relax top
     TOP = "top"        # Freeze top layers, relax bottom
-
-
-kpoints = Kpoints.gamma_automatic((1, 1, 1), shift=(0, 0, 0))
-
-incar_dict = {
-    "ALGO": "Normal",
-    "EDIFF": 1e-06,
-    "EDIFFG": -0.01,
-    "ENCUT": 500,
-    "GGA": "Pe",
-    "IBRION": 2,
-    "ISIF": 2,
-    "ISMEAR": 0,
-    "ISYM": 2,
-    "IVDW": 4,
-    "IWAVPR": 1,
-    "LASPH": True,
-    "LCHARG": True,
-    "LMAXMIX": 6,
-    "LORBIT": 11,
-    "LREAL": "Auto",
-    "LVHAR": True,
-    "LWAVE": False,
-    "NELM": 60,
-    "NSW": 100,
-    "POTIM": 0.4,
-    "PREC": "Accurate",
-    "SIGMA": 0.02,
-    "NCORE": 64,
-}
 
 
 def apply_selective_dynamics(
@@ -240,21 +218,27 @@ def write_slab_directories(
     slabs: list[Slab],
     directory: str,
     min_slab_size: float,
+    incar,
+    kpoints,
     layers_to_relax: int = None,
     freeze_mode: FreezingMode = FreezingMode.CENTER,
     overwrite: bool = True,
+    functional: str = "PBE",
 ) -> int:
     """
     Write VASP input files for slabs to directory structure.
-    
+
     Args:
         slabs: List of Slab objects
         directory: Parent directory for output
         min_slab_size: Minimum slab size (for directory naming)
+        incar: Incar object or INCAR-tag dict
+        kpoints: Kpoints object
         layers_to_relax: Number of layers (interpretation depends on freeze_mode)
         freeze_mode: Freezing mode for selective dynamics
         overwrite: Whether to overwrite existing directories
-        
+        functional: POTCAR functional family
+
     Returns:
         Number of slabs successfully written
     """
@@ -264,7 +248,7 @@ def write_slab_directories(
     skipped_existing = 0
     failed_count = 0
     root = Path(directory)
-    
+
     # Track unique structures using a hash of atomic positions
     seen_structures = {}
 
@@ -330,21 +314,11 @@ def write_slab_directories(
 
         try:
             logger.debug(f"  Writing VASP input files...")
-            poscar = Poscar(slab)
-            potcar = Potcar(symbols=poscar.site_symbols, functional="PBE")
-            incar = Incar.from_dict(incar_dict)
-
-            input_set = VaspInput(
-                incar=incar,
-                kpoints=kpoints,
-                poscar=poscar,
-                potcar=potcar,
-            )
-            input_set.write_input(path)
+            write_vasp_input(slab, path, incar, kpoints, potcar_functional=functional)
 
             with open(path / "slab.json", "w") as f:
                 json.dump(slab.as_dict(), f, indent=2)
-                
+
             logger.info(f"  ✓ Written term_{termination_index} to {path.relative_to(root)}")
             written_count += 1
 
@@ -443,12 +417,12 @@ def parse_miller_index(miller_str: str) -> tuple:
         return tuple(result)
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Generate and plot slabs for surface analysis.",
-        epilog="Example: python slabgen.py POSCAR --hkl 111 --layers 2 --freeze-mode bottom"
+def build_parser(parser=None):
+    parser = parser or argparse.ArgumentParser(
+        description="Generate surface slabs and write VASP inputs.",
+        epilog="Example: slabgen POSCAR --hkl 111 --layers 2 --freeze-mode bottom"
     )
-    
+
     # Mutually exclusive group for Miller index specification
     miller_group = parser.add_mutually_exclusive_group(required=True)
     miller_group.add_argument(
@@ -506,11 +480,6 @@ def parse_args():
         type=str
     )
     parser.add_argument(
-        '--no-overwrite',
-        action='store_true',
-        help='Do not overwrite existing directories (default: overwrite enabled)'
-    )
-    parser.add_argument(
         '--log-file',
         type=str,
         default=None,
@@ -521,13 +490,20 @@ def parse_args():
         action='store_true',
         help='Enable verbose (DEBUG) logging'
     )
-    return parser.parse_args()
+    add_incar_args(parser, "slab")
+    add_kpoints_args(parser, (1, 1, 1))
+    add_potcar_args(parser)
+    add_overwrite_args(parser)
+    return parser
 
 
-def main():
-    args = parse_args()
-    
+def main(args=None):
+    if not isinstance(args, argparse.Namespace):
+        args = build_parser().parse_args(args)
+
     logger = setup_logging(args.verbose)
+    incar = resolve_incar(args)
+    kpoints = gamma_kpoints(args)
     # Load structure
     try:
         structure = Structure.from_file(args.structure)
@@ -603,9 +579,12 @@ def main():
             slabs,
             args.directory,
             min_slab_size=thickness,
+            incar=incar,
+            kpoints=kpoints,
             layers_to_relax=args.layers if args.layers > 0 else None,
             freeze_mode=freeze_mode,
-            overwrite=not args.no_overwrite,  # Invert the flag
+            overwrite=args.overwrite,
+            functional=args.functional,
         )
         
         print(f"Thickness {thickness}: Generated {len(slabs)} slabs, wrote {written_count}")

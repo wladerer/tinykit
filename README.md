@@ -12,6 +12,32 @@ TinyKit provides command-line tools for generating and analyzing surface structu
 pip install -e .
 ```
 
+This installs a single `tinykit` command with subcommands, plus an individual command for each tool.
+
+```bash
+tinykit --help              # list all subcommands
+tinykit slabgen --help      # help for one tool
+tinykit slabgen POSCAR --hkl 111   # equivalent to: slabgen POSCAR --hkl 111
+```
+
+Tab completion is provided by [argcomplete](https://github.com/kislyuk/argcomplete). To enable it for the unified command:
+
+```bash
+eval "$(register-python-argcomplete tinykit)"
+```
+
+## Shared options for input-generating tools
+
+`adsorb`, `slabgen`, and `charge` share a common set of flags:
+
+- `--preset NAME` selects a named INCAR preset (`adsorb`, `slab`, `charge`). Presets live in `src/tinykit/resources/incars.yaml`; edit values there.
+- `--incar FILE` uses a custom INCAR file, overriding `--preset`.
+- `--kpoints KX KY KZ` sets a gamma-centered k-point mesh.
+- `--functional NAME` selects the POTCAR functional family (default `PBE`).
+- `--no-overwrite` skips directories that already exist.
+
+`deploy` reads its INCAR and KPOINTS from files instead of presets, and also accepts `--functional` and `--no-overwrite`.
+
 ## Tools
 
 ### `adsorb` - Surface Adsorption
@@ -21,39 +47,39 @@ Generate adsorbed structures on surfaces with support for both single and multip
 # Single adsorbate on a surface
 adsorb POSCAR H2O --supercell 2 2 1 -d 1.8
 
-# Multiple adsorbates with sampling
-adsorb POSCAR Ag --multiple 2 --min-distance 2.0 --max-samples 50
+# Multiple adsorbates with random sampling of the configuration space
+adsorb POSCAR Ag --multiple 2 --min-distance 2.0 --max-samples 50 --seed 0
 
-# Specify adsorption sites
+# Restrict to specific site types
 adsorb POSCAR OH --multiple 3 --sites ontop bridge
 ```
 
 **Features:**
 - Pre-defined molecules from JSON or single-atom adsorbates (e.g., Ag, Au, Pt)
-- Multiple simultaneous adsorption with distance constraints
-- Site type filtering (ontop, bridge, hollow)
-- Random sampling for large configuration spaces
-- Custom INCAR templates
+- Multiple simultaneous adsorption with site- and atom-distance constraints
+- Site type filtering with `--sites` (ontop, bridge, hollow)
+- Symmetry reduction of configurations, with optional random sampling (`--max-samples`, `--seed`)
+- Parallel generation with `-j/--jobs`
 
 ### `slabgen` - Slab Generation
 Generate surface slabs from bulk structures with automatic Miller index enumeration.
 
 ```bash
-# Generate slabs up to (1,1,1) Miller indices
-slabgen POSCAR --hkl 1 --thicknesses 12 15 --vacuums 15
+# Generate slabs for the (1,1,1) Miller index
+slabgen POSCAR --hkl 111 --thicknesses 12 15 --vacuum 15
 
-# Allow asymmetric slabs
-slabgen POSCAR --hkl 2 -a
+# Enumerate all slabs up to a maximum Miller index
+slabgen POSCAR --max-hkl 2
 
-# Skip Tasker analysis (use pymatgen only)
-slabgen POSCAR --no-tasker
+# Freeze the bottom layers
+slabgen POSCAR --hkl 111 --freeze-mode bottom --layers 2
 ```
 
 **Features:**
-- Automatic Miller plane generation
-- Multiple thickness/vacuum combinations
-- Tasker analysis for polar surfaces (via surfaxe)
-- Selective dynamics setup
+- Specific Miller index (`--hkl`) or automatic enumeration (`--max-hkl`)
+- Multiple thickness values, with vacuum in Angstroms
+- Both symmetric and asymmetric terminations are generated and deduplicated
+- Selective dynamics with `center`, `bottom`, or `top` freezing modes
 
 ### `deploy` - Batch VASP Input Generation
 Convert structure trajectories into VASP calculation directories.
@@ -62,66 +88,112 @@ Convert structure trajectories into VASP calculation directories.
 # From trajectory file
 deploy structures.traj -i INCAR -k KPOINTS -o calculations/
 
-# Freeze bottom layers
+# Freeze atoms below a z-coordinate
 deploy structures.extxyz --freeze 10.0
 ```
 
-**Supported formats:** VASP XDATCAR, ASE trajectory, extended XYZ, etc.
+**Supported formats:** VASP XDATCAR, ASE trajectory, extended XYZ, and other ASE-readable formats.
 
 ### `charge` - Charged Slab Calculations
 Set up VASP calculations for charged surfaces with varying electron counts.
 
 ```bash
-# Generate NELECT series
+# Generate a NELECT series
 charge POSCAR --start 0.1 --stop 1.0 --step 0.1 --kpoints 5 5 1
 
-# With dipole correction
+# With dipole correction (referenced at the center of mass)
 charge POSCAR --dipole --start -0.5 --stop 0.5 --step 0.1
 ```
 
 ### `slabviz` - Structure Visualization
-Render high-quality structure images using POV-Ray.
+Render structure images, optionally with charge-density isosurfaces, using POV-Ray.
 
 ```bash
 # Basic rendering
 slabviz CONTCAR -o output.png
 
-# Custom view and supercell
-slabviz CONTCAR --rotation 90 0 45 --supercell 2 2 1
+# Custom view, supercell, and resolution
+slabviz CONTCAR --rotation 90 0 45 --supercell 2 2 1 --width 1600
 
-# Custom atom colors
-slabviz CONTCAR -c colors.yaml
+# Per-element color and radius overrides
+slabviz CONTCAR -c styles.yaml
+```
+
+### `bulkviz` - Bulk Structure Visualization
+Render bulk structures with POV-Ray, sharing the same style and rendering options as `slabviz`.
+
+```bash
+bulkviz POSCAR -o bulk.png --rotation -52 -48 -30 --show-cell
+```
+
+**Rendering options (slabviz and bulkviz):** `--width`/`--height`, `--camera-dist`, `--orthographic`/`--perspective`, `--show-cell`, and `--keep-pov` (retain the intermediate `.pov`/`.ini` files for manual editing).
+
+### Style overrides
+
+`slabviz` and `bulkviz` take a YAML file via `-c/--colors` (alias `--styles`) that overrides per-element color and/or radius without touching the bundled templates:
+
+```yaml
+Fe: [255, 100, 0]            # color only (RGB 0-255)
+O:  "#00ff00"                # color only (hex)
+C:  {radius: 0.75}           # radius only, or {color: ..., radius: ...}
 ```
 
 ### `stmplot` - STM Image Simulation
-Generate constant-current STM images from VASP charge density files.
+Generate constant-current STM images from VASP charge density files. Plots in real Angstrom coordinates with correct periodic tiling of oblique (e.g. hexagonal) cells.
 
 ```bash
-# From PARCHG file
+# From a PARCHG file
 stmplot PARCHG -c 0.001 -o stm.png
 
-# Tiled periodic image
-stmplot PARCHG --current 0.001 --tiles 3
+# Tiled periodic image with a chosen colormap and contrast clip
+stmplot PARCHG --current 0.001 --tiles 3 --cmap inferno --clip 2 98
+```
+
+### `surfind` - Surface State Analysis
+Find surface-localized electronic states from PROCAR and OUTCAR.
+
+```bash
+surfind -s CONTCAR -p PROCAR -o OUTCAR --window 1.0 --layers 2
+```
+
+### `magviz` - Magnetic Moment Export
+Extract magnetic moments from `vasprun.xml` and write them to a CIF.
+
+```bash
+magviz vasprun.xml -o magmoms.cif          # non-collinear (vector) moments
+magviz vasprun.xml --collinear             # collinear (scalar) moments
 ```
 
 ## Dependencies
 
-- pymatgen
-- ASE
 - numpy
+- ASE
+- pymatgen
 - matplotlib
-- surfaxe
-- POV-Ray (for visualization)
+- scipy
+- pyyaml
+- argcomplete
+- POV-Ray (external program, for visualization)
 
 ## Project Structure
 
 ```
 src/tinykit/
+├── cli.py          # Unified `tinykit` dispatcher + shared CLI helpers
 ├── adsorb.py       # Adsorption structure generation
 ├── slabgen.py      # Slab generation
 ├── deploy.py       # Batch VASP input creation
 ├── charge.py       # Charged surface calculations
-├── slabviz.py      # Structure visualization
+├── slabviz.py      # Structure / isosurface visualization
+├── bulkviz.py      # Bulk structure visualization
 ├── stmplot.py      # STM image simulation
-└── molecules.json  # Pre-defined adsorbate molecules
+├── surfind.py      # Surface state analysis
+├── magviz.py       # Magnetic moment export
+├── presets.py      # Named INCAR preset loading
+├── vaspio.py       # Centralized VASP input assembly/writing
+├── povray.py       # Shared POV-Ray rendering helpers
+├── molecules.json  # Pre-defined adsorbate molecules
+└── resources/
+    ├── incars.yaml          # Named INCAR presets
+    └── atom_templates.json  # Default atom colors and radii
 ```

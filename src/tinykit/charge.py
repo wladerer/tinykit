@@ -1,93 +1,94 @@
+"""Generate VASP inputs for charged slabs over a range of NELECT values."""
+
 import argparse
 
-from pathlib import Path
 from pymatgen.core import Structure
-from pymatgen.io.vasp import Poscar, Incar, Kpoints, Potcar
-from pymatgen.io.vasp.sets import VaspInput
+from pymatgen.io.vasp import Poscar
 
 import numpy as np
 
-base_incar_dict = {
-    "ALGO": "Normal",
-    "EDIFF": 1e-06,
-    "EDIFFG": -0.01,
-    "ENCUT": 500,
-    "ISMEAR": 0,
-    "KPAR": 8,
-    "LAECHG": True,
-    "LASPH": True,
-    "LCHARG": True,
-    "LMAXMIX": 6,
-    "LORBIT": 11,
-    "LREAL": "Auto",
-    "LVHAR": True,
-    "LWAVE": False,
-    "NELM": 200,
-    "NEDOS": 6001,
-    "PREC": "Accurate",
-    "SIGMA": 0.02,
-    "NCORE": 128,
-    "EMIN": 10,
-    "EMAX": -8,
-}
+from tinykit.vaspio import write_vasp_input
+from tinykit.cli import (
+    add_incar_args, resolve_incar, add_potcar_args,
+    add_kpoints_args, gamma_kpoints, add_overwrite_args,
+)
 
-def write_directories(structure: Structure, nelects: list[float], kpoints: Kpoints, directory: str) -> None:
-    """writes each structure to its own directory"""
 
+def write_directories(
+    structure: Structure,
+    nelects: list[float],
+    kpoints,
+    directory: str,
+    base_incar,
+    functional: str = "PBE",
+    overwrite: bool = True,
+) -> int:
+    """Write a VASP input directory for each NELECT value. Returns count written."""
+    base_incar = dict(base_incar)
+    # Use the K_pv POTCAR for potassium.
+    site_symbols = [s.replace("K", "K_pv") for s in Poscar(structure).site_symbols]
+
+    written = 0
     for nelect in nelects:
+        incar = dict(base_incar)
+        incar["NELECT"] = round(nelect, 6)
+        path = write_vasp_input(
+            structure,
+            f"{directory}/NELECT_{nelect:.2f}",
+            incar,
+            kpoints,
+            potcar_symbols=site_symbols,
+            potcar_functional=functional,
+            overwrite=overwrite,
+        )
+        if path is not None:
+            written += 1
+    return written
 
-        path = Path(directory) / f"NELECT_{nelect:.2f}"
-        path.mkdir(parents=True, exist_ok=True)
 
-        #create poscar from structure
-        poscar = Poscar(structure)
-        site_symbols = poscar.site_symbols
-        #update K to K_pv
-        site_symbols = [site_symbol.replace("K", "K_pv") for site_symbol in site_symbols]
-        potcar = Potcar(symbols=poscar.site_symbols, functional="PBE")
-        #update incar_dict with NELECT
-        incar_dict = base_incar_dict.copy()
-        incar_dict["NELECT"] = round(nelect, 6)
-        incar = Incar.from_dict(incar_dict)
-        
-        input_set = VaspInput(incar=incar, kpoints=kpoints, poscar=poscar, potcar=potcar)
-        input_set.write_input(path)
+def build_parser(parser=None):
+    parser = parser or argparse.ArgumentParser(
+        description="Generate VASP inputs for a charged slab over a range of NELECT values."
+    )
 
-    return None
-
-# Define argument parser
-def parse_args():
-    parser = argparse.ArgumentParser(description="Generate and plot slabs for surface analysis.")
-    
-    # Command-line arguments
     parser.add_argument('structure', type=str,
                         help='Path to the structure file')
-    parser.add_argument('--step', type=float, default=0.0,)
-    parser.add_argument('--start', type=float, default=0.1,)
+    parser.add_argument('--step', type=float, default=0.1)
+    parser.add_argument('--start', type=float, default=0.1)
     parser.add_argument('--stop', type=float, default=1.1)
-    parser.add_argument('--kpoints', type=int, nargs=3, default=[5, 5, 1])
-    parser.add_argument('--dipole', action='store_true')
-    
-    return parser.parse_args()
+    parser.add_argument('--dipole', action='store_true',
+                        help='Add a dipole correction referenced at the center of mass')
+    parser.add_argument('-o', '--output', default='ChargedInputs',
+                        help='Output directory (default: ChargedInputs)')
+    add_incar_args(parser, "charge")
+    add_kpoints_args(parser, (5, 5, 1))
+    add_potcar_args(parser)
+    add_overwrite_args(parser)
+    return parser
 
-def main():
-    # Parse arguments
-    args = parse_args()
 
-    # Generate charged slabs
+def main(args=None):
+    if not isinstance(args, argparse.Namespace):
+        args = build_parser().parse_args(args)
+
     structure = Structure.from_file(args.structure)
-    kpoints = Kpoints(kpts=args.kpoints)
+    kpoints = gamma_kpoints(args)
     nelects = np.arange(args.start, args.stop, args.step)
 
+    base_incar = dict(resolve_incar(args))
     if args.dipole:
-        base_incar_dict["IDIPOL"] = 3
-
-        #get center of mass of the structure    
+        base_incar["IDIPOL"] = 3
+        # Place the dipole reference at the center of mass.
         weights = [site.species.weight for site in structure.sites]
         center_of_mass = np.average(structure.frac_coords, weights=weights, axis=0)
-        base_incar_dict["DIPOL"] = f"{center_of_mass[0]:.2f} {center_of_mass[1]:.2f} {center_of_mass[2]:.2f}"
+        base_incar["DIPOL"] = f"{center_of_mass[0]:.2f} {center_of_mass[1]:.2f} {center_of_mass[2]:.2f}"
 
-    write_directories(structure, nelects, kpoints, "ChargedInputs")
+    written = write_directories(
+        structure, nelects, kpoints, args.output, base_incar,
+        functional=args.functional, overwrite=args.overwrite,
+    )
+    print(f"Wrote {written} charged-slab directories to {args.output}/")
+
 
 if __name__ == "__main__":
     main()
