@@ -4,9 +4,9 @@ cd "$(dirname "$0")"
 rm -rf .venv
 uv venv --system-site-packages .venv
 uv pip install --python .venv/bin/python --editable . --no-deps
-# argcomplete is a small pure-Python package not provided by the system env;
-# install it into the project venv so `tinykit` tab completion works.
-uv pip install --python .venv/bin/python argcomplete
+# Heavy deps (pymatgen, ase, ...) and argcomplete come from the system env
+# (home-manager python3.withPackages), so this venv is built with --no-deps.
+# Add `argcomplete` to that closure to enable `tinykit` tab completion below.
 
 # Register tab completion on venv activation (bash/zsh).
 cat >> .venv/bin/activate <<'ACTIVATE'
