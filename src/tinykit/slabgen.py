@@ -474,9 +474,9 @@ def build_parser(parser=None):
         help='Use unit planes for slab thickness (vacuum always in Angstroms)'
     )
     parser.add_argument(
-        '-d', '--directory',
-        default='GeneratedSlabs',
-        help='Parent directory of all slabs (default: GeneratedSlabs)',
+        '-o', '--output', dest='directory',
+        default='slabs',
+        help='Parent directory of all slabs (default: slabs)',
         type=str
     )
     parser.add_argument(

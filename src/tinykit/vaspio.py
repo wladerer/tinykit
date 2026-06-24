@@ -53,3 +53,23 @@ def write_vasp_input(structure, directory, incar, kpoints, *, overwrite: bool = 
     path.mkdir(parents=True, exist_ok=True)
     build_vasp_input(structure, incar, kpoints, **kwargs).write_input(path)
     return path
+
+
+def write_many(jobs, directory, kpoints, *, overwrite: bool = True, **kwargs) -> int:
+    """Write a batch of VASP input directories and return the number written.
+
+    `jobs` is an iterable of ``(subdir_name, structure, incar)`` triples; each is
+    written under ``directory/subdir_name``. Shared keyword arguments (e.g.
+    ``sort_structure``, ``potcar_functional``, ``potcar_symbols``) apply to every
+    job and are forwarded to :func:`write_vasp_input`. This is the common path
+    for adsorb/charge/deploy, which differ only in how they build `jobs` (varying
+    the structure, the INCAR, or both).
+    """
+    root = Path(directory)
+    written = 0
+    for name, structure, incar in jobs:
+        path = write_vasp_input(structure, root / name, incar, kpoints,
+                                overwrite=overwrite, **kwargs)
+        if path is not None:
+            written += 1
+    return written

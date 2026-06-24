@@ -11,7 +11,7 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from itertools import combinations
 import argparse
 
-from tinykit.vaspio import write_vasp_input
+from tinykit.vaspio import write_many
 from tinykit.cli import (
     add_incar_args, resolve_incar, add_potcar_args,
     add_kpoints_args, gamma_kpoints, add_overwrite_args,
@@ -350,35 +350,6 @@ def find_duplicate_structures(
     return groups
 
 
-# ---------------------------------------------------------------------------
-# Output
-# ---------------------------------------------------------------------------
-
-def write_directories(
-    structures: list[Structure],
-    directory: str,
-    incar,
-    kpoints,
-    names: list[str] = None,
-    functional: str = "PBE",
-    overwrite: bool = True,
-) -> int:
-    """Write each structure to its own subdirectory with VASP input files.
-
-    Returns the number of directories actually written.
-    """
-    written = 0
-    for index, structure in enumerate(structures):
-        subdir_name = names[index] if (names and index < len(names)) else f"adsorb_{index}"
-        path = write_vasp_input(
-            structure, Path(directory) / subdir_name, incar, kpoints,
-            potcar_functional=functional, overwrite=overwrite,
-        )
-        if path is not None:
-            written += 1
-    return written
-
-
 def build_parser(parser=None):
     parser = parser or argparse.ArgumentParser(description="Generate adsorbed structures")
     parser.add_argument("structure", type=str, help="Path to structure file")
@@ -447,8 +418,9 @@ def main(args=None):
         parent_dir = args.output or f"adsorbed_{mol_tag}_x{args.multiple}"
         names = [f"{mol_tag}_x{args.multiple}_{label}" for label in combo_labels]
 
-        written = write_directories(structures, parent_dir, incar, kpoints, names=names,
-                                    functional=args.functional, overwrite=args.overwrite)
+        jobs = zip(names, structures, [incar] * len(structures))
+        written = write_many(jobs, parent_dir, kpoints,
+                             potcar_functional=args.functional, overwrite=args.overwrite)
         print(f"Generated {len(structures)} structures with {args.multiple} {args.molecule} "
               f"adsorbates ({written} written) in {parent_dir}/")
         for name in names:
@@ -467,8 +439,10 @@ def main(args=None):
     else:
         parent_dir = args.output or f"adsorbed_{args.molecule}"
         adsorbed_structures = adsorb(structure, molecule, args.supercell, distance=args.distance)
-        written = write_directories(adsorbed_structures, parent_dir, incar, kpoints,
-                                    functional=args.functional, overwrite=args.overwrite)
+        names = [f"adsorb_{i}" for i in range(len(adsorbed_structures))]
+        jobs = zip(names, adsorbed_structures, [incar] * len(adsorbed_structures))
+        written = write_many(jobs, parent_dir, kpoints,
+                             potcar_functional=args.functional, overwrite=args.overwrite)
         print(f"Generated {len(adsorbed_structures)} adsorbed structures for {args.molecule} "
               f"({written} written) in {parent_dir}/")
 

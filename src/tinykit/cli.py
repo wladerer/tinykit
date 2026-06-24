@@ -7,6 +7,7 @@ modules lazily (inside ``main``) so this module stays import-cheap and free of
 circular imports.
 """
 
+import logging
 from pathlib import Path
 
 from pymatgen.io.vasp.inputs import Incar, Kpoints
@@ -21,12 +22,26 @@ SUBCOMMANDS = {
     "slabgen": "tinykit.slabgen",
     "charge": "tinykit.charge",
     "deploy": "tinykit.deploy",
-    "slabviz": "tinykit.slabviz",
-    "bulkviz": "tinykit.bulkviz",
+    "viz": "tinykit.viz",
     "stmplot": "tinykit.stmplot",
     "surfind": "tinykit.surfind",
     "magviz": "tinykit.magviz",
 }
+
+
+def get_logger(name: str, verbose: bool = False) -> logging.Logger:
+    """Return a console logger with a single handler and a consistent format.
+
+    Idempotent: repeated calls for the same name don't stack handlers. `verbose`
+    selects DEBUG over INFO. Shared so the tools don't each reinvent logging.
+    """
+    logger = logging.getLogger(name)
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+    return logger
 
 
 # ---------------------------------------------------------------------------
@@ -97,7 +112,7 @@ def main(argv=None):
     import importlib
 
     parser = argparse.ArgumentParser(
-        prog="tinykit",
+        prog="tk",
         description="Toolkit for preparing and analyzing VASP calculations.",
     )
     parser.add_argument("--version", action="version", version=f"tinykit {__version__}")

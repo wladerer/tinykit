@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
 """Find surface-localized electronic states from PROCAR/OUTCAR."""
 import argparse
-import logging
 import numpy as np
 import sys
 from pymatgen.core import Structure
 from pymatgen.io.vasp import Procar, Outcar
 
-# Configure Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S"
-)
-logger = logging.getLogger(__name__)
+from tinykit.cli import get_logger
+
+logger = get_logger(__name__)
 
 def get_surface_character(structure_path, procar_path, outcar_path, layer_tolerance=1.0, target_k_idx=None, energy_window=1.0, layers: int = 2):
     
@@ -113,7 +108,7 @@ def main(args=None):
     if not isinstance(args, argparse.Namespace):
         args = build_parser().parse_args(args)
     if args.verbose:
-        logger.setLevel(logging.DEBUG)
+        get_logger(__name__, verbose=True)
 
     results = get_surface_character(
         args.structure, args.procar, args.outcar,
