@@ -1,27 +1,20 @@
+"""Convert a trajectory of structures into batched VASP input directories."""
+
 import argparse
-from pymatgen.io.vasp.inputs import Incar, Kpoints, Poscar, Potcar, VaspInput
+from pymatgen.io.vasp.inputs import Incar, Kpoints
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.core.structure import Structure
 from pathlib import Path
 
-from ase.io import read 
+from ase.io import read
+
+from tinykit.vaspio import write_vasp_input
 
 
 def sanitize_filename(name: str) -> str:
     """Sanitize a string to be used as a directory name."""
     return "".join(c if c.isalnum() else "" for c in name)
 
-
-def assemble_vasp_inputs(structures: list[Structure], incar: Incar, kpoints: Kpoints) -> list[VaspInput]:
-    """Assemble VASP input files from structures, incar, kpoints, and potcar."""
-    inputs = []
-    for structure in structures:
-        poscar = Poscar(structure, sort_structure=True)
-        potcar = Potcar(symbols=poscar.site_symbols, functional="PBE")
-        input_set = VaspInput(incar=incar, kpoints=kpoints, poscar=poscar, potcar=potcar)
-        inputs.append(input_set)
-
-    return inputs
 
 def freeze_atoms(structure: Structure, z_limit: float) -> Structure:
     """Freeze atoms in the structure below a specific z-coordinate."""
@@ -34,9 +27,11 @@ def freeze_atoms(structure: Structure, z_limit: float) -> Structure:
 
 
 # Define argument parser
-def parse_args():
-    parser = argparse.ArgumentParser(description="Generate VASP input files from a list of structures.")
-    
+def build_parser(parser=None):
+    parser = parser or argparse.ArgumentParser(
+        description="Generate VASP input files from a trajectory of structures."
+    )
+
     # Command-line arguments
     parser.add_argument('structures', type=str,
                         help='Path to the structures file (traj, extxyz, XDATCAR, etc.)')
@@ -48,13 +43,17 @@ def parse_args():
                         help='Output directory for VASP inputs (default: ./kamino)')
     parser.add_argument('--freeze', type=float, default=None,
                         help='Freeze atoms below the specified z-coordinate')
+    parser.add_argument('--functional', default='PBE',
+                        help='POTCAR functional family (default: PBE)')
+    parser.add_argument('--no-overwrite', dest='overwrite', action='store_false',
+                        help='Skip directories that already exist instead of overwriting')
+    parser.set_defaults(overwrite=True)
+    return parser
 
-    return parser.parse_args()
 
-
-def main():
-    # Parse arguments
-    args = parse_args()
+def main(args=None):
+    if not isinstance(args, argparse.Namespace):
+        args = build_parser().parse_args(args)
 
     # Load structures from file
     try: 
@@ -78,24 +77,23 @@ def main():
         return
 
 
-    if args.freeze:
+    if args.freeze is not None:
         # Freeze atoms in the structures
         for i, structure in enumerate(structures):
             structures[i] = freeze_atoms(structure, args.freeze)
 
-    # Generate VASP inputs
-    inputs = assemble_vasp_inputs(structures, incar, kpoints)
-
-    # Write VASP input files to output directory
-    for i, (structure, input_set) in enumerate(zip(structures, inputs)):
+    # Write VASP input files to output directory, one per structure.
+    written = 0
+    for i, structure in enumerate(structures):
         # Get a more descriptive name based on the chemical formula
         formula = sanitize_filename(structure.composition.reduced_formula)
         output_dir = Path(args.output) / f"{formula}_{i+1}"
-        output_dir.mkdir(parents=True, exist_ok=True)
-        
-        input_set.write_input(output_dir)
+        path = write_vasp_input(structure, output_dir, incar, kpoints, sort_structure=True,
+                                potcar_functional=args.functional, overwrite=args.overwrite)
+        if path is not None:
+            written += 1
 
-    print(f"VASP inputs written to: {args.output}")
+    print(f"Wrote {written} VASP input directories to: {args.output}")
 
     
 if __name__ == "__main__":

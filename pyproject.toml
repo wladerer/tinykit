@@ -1,7 +1,7 @@
 [project]
 name = "tinykit"
 version = "0.0.1"
-description = "A Python package to simplify preapring and analyzing VASP calculations"
+description = "A Python package to simplify preparing and analyzing VASP calculations"
 authors = [
     { name="William Laderer", email="wtladerer@gmail.com"},
 ]
@@ -16,20 +16,27 @@ classifiers = [
 dependencies = [
     "numpy",
     "ase",
+    "pymatgen",
+    "matplotlib",
+    "scipy",
+    "pyyaml",
+    "argcomplete",
 ]
 
 [project.scripts]
+tinykit = "tinykit.cli:main"
 slabviz = "tinykit.slabviz:main"
 adsorb = "tinykit.adsorb:main"
 slabgen = "tinykit.slabgen:main"
-"bulkviz" = "tinykit.bulkviz:main"
-"charge" = "tinykit.charge:main"
-"stmplot" = "tinykit.stmplot:main"
-"deploy" = "tinykit.deploy:main"
-"surfind" = "tinykit.surfind:main"
+bulkviz = "tinykit.bulkviz:main"
+charge = "tinykit.charge:main"
+stmplot = "tinykit.stmplot:main"
+deploy = "tinykit.deploy:main"
+surfind = "tinykit.surfind:main"
+magviz = "tinykit.magviz:main"
 
 [tool.setuptools.package-data]
-tinykit = ["resources/*.json"]
+tinykit = ["resources/*.json", "resources/*.yaml", "molecules.json"]
 
 [build-system]
 requires = ["setuptools>=61.0"]

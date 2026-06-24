@@ -1,547 +1,710 @@
 {
-    "H": {
-        "color": "#274AB3",
-        "radius": 1.25,
-        "avg_ionic_radius": 1.75
-    },
-    "He": {
-        "color": "#D9FFFF",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Li": {
-        "color": "#CC80FF",
-        "radius": 1.45,
-        "avg_ionic_radius": 0.9
-    },
-    "Be": {
-        "color": "#C2FF00",
-        "radius": 1.05,
-        "avg_ionic_radius": 0.59
-    },
-    "B": {
-        "color": "#FFB5B5",
-        "radius": 0.85,
-        "avg_ionic_radius": 0.41
-    },
-    "C": {
-        "color": "#909090",
-        "radius": 1.2,
-        "avg_ionic_radius": 0.3
-    },
-    "N": {
-        "color": "#3050F8",
-        "radius": 0.65,
-        "avg_ionic_radius": 0.63
-    },
-    "O": {
-        "color": "#FF0D0D",
-        "radius": 1.2,
-        "avg_ionic_radius": 1.26
-    },
-    "F": {
-        "color": "#90E050",
-        "radius": 0.5,
-        "avg_ionic_radius": 0.705
-    },
-    "Ne": {
-        "color": "#B3E3F5",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Na": {
-        "color": "#AB5CF2",
-        "radius": 1.8,
-        "avg_ionic_radius": 1.16
-    },
-    "Mg": {
-        "color": "#8AFF00",
-        "radius": 1.5,
-        "avg_ionic_radius": 0.86
-    },
-    "Al": {
-        "color": "#BFA6A6",
-        "radius": 1.25,
-        "avg_ionic_radius": 0.675
-    },
-    "Si": {
-        "color": "#F0C8A0",
-        "radius": 1.1,
-        "avg_ionic_radius": 0.54
-    },
-    "P": {
-        "color": "#FF8000",
-        "radius": 1.0,
-        "avg_ionic_radius": 0.55
-    },
-    "S": {
-        "color": "#FFFF30",
-        "radius": 1.0,
-        "avg_ionic_radius": 0.88
-    },
-    "Cl": {
-        "color": "#1FF01F",
-        "radius": 1.0,
-        "avg_ionic_radius": 0.7799999999999999
-    },
-    "Ar": {
-        "color": "#80D1E3",
-        "radius": 0.71,
-        "avg_ionic_radius": 0.0
-    },
-    "K": {
-        "color": "#8F40D4",
-        "radius": 2.2,
-        "avg_ionic_radius": 1.52
-    },
-    "Ca": {
-        "color": "#3DFF00",
-        "radius": 1.8,
-        "avg_ionic_radius": 1.14
-    },
-    "Sc": {
-        "color": "#E6E6E6",
-        "radius": 1.6,
-        "avg_ionic_radius": 0.885
-    },
-    "Ti": {
-        "color": "#BFC2C7",
-        "radius": 1.4,
-        "avg_ionic_radius": 0.8516666666666667
-    },
-    "V": {
-        "color": "#A6A6AB",
-        "radius": 1.35,
-        "avg_ionic_radius": 0.7775000000000001
-    },
-    "Cr": {
-        "color": "#8A99C7",
-        "radius": 1.4,
-        "avg_ionic_radius": 0.94
-    },
-    "Mn": {
-        "color": "#9C7AC7",
-        "radius": 1.4,
-        "avg_ionic_radius": 0.6483333333333333
-    },
-    "Fe": {
-        "color": "#E06633",
-        "radius": 1.4,
-        "avg_ionic_radius": 0.8525
-    },
-    "Co": {
-        "color": "#F090A0",
-        "radius": 1.35,
-        "avg_ionic_radius": 0.7683333333333334
-    },
-    "Ni": {
-        "color": "#50D050",
-        "radius": 1.35,
-        "avg_ionic_radius": 0.74
-    },
-    "Cu": {
-        "color": "#C88033",
-        "radius": 1.35,
-        "avg_ionic_radius": 0.82
-    },
-    "Zn": {
-        "color": "#7D80B0",
-        "radius": 1.35,
-        "avg_ionic_radius": 0.88
-    },
-    "Ga": {
-        "color": "#C28F8F",
-        "radius": 1.3,
-        "avg_ionic_radius": 0.76
-    },
-    "Ge": {
-        "color": "#668F8F",
-        "radius": 1.25,
-        "avg_ionic_radius": 0.77
-    },
-    "As": {
-        "color": "#BD80E3",
-        "radius": 1.15,
-        "avg_ionic_radius": 0.6599999999999999
-    },
-    "Se": {
-        "color": "#FFA100",
-        "radius": 1.15,
-        "avg_ionic_radius": 1.0133333333333334
-    },
-    "Br": {
-        "color": "#A62929",
-        "radius": 1.15,
-        "avg_ionic_radius": 0.8825000000000001
-    },
-    "Kr": {
-        "color": "#5CB8D1",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Rb": {
-        "color": "#702EB0",
-        "radius": 2.35,
-        "avg_ionic_radius": 1.66
-    },
-    "Sr": {
-        "color": "#00FF00",
-        "radius": 2.0,
-        "avg_ionic_radius": 1.32
-    },
-    "Y": {
-        "color": "#94FFFF",
-        "radius": 1.8,
-        "avg_ionic_radius": 1.04
-    },
-    "Zr": {
-        "color": "#94E0E0",
-        "radius": 1.55,
-        "avg_ionic_radius": 0.86
-    },
-    "Nb": {
-        "color": "#73C2C9",
-        "radius": 1.45,
-        "avg_ionic_radius": 0.82
-    },
-    "Mo": {
-        "color": "#54B5B5",
-        "radius": 1.45,
-        "avg_ionic_radius": 0.775
-    },
-    "Tc": {
-        "color": "#3B9E9E",
-        "radius": 1.35,
-        "avg_ionic_radius": 0.7416666666666667
-    },
-    "Ru": {
-        "color": "#248F8F",
-        "radius": 1.3,
-        "avg_ionic_radius": 0.6609999999999999
-    },
-    "Rh": {
-        "color": "#0A7D8C",
-        "radius": 1.35,
-        "avg_ionic_radius": 0.745
-    },
-    "Pd": {
-        "color": "#006985",
-        "radius": 1.4,
-        "avg_ionic_radius": 0.84625
-    },
-    "Ag": {
-        "color": "#C0C0C0",
-        "radius": 1.6,
-        "avg_ionic_radius": 1.0866666666666667
-    },
-    "Cd": {
-        "color": "#FFD98F",
-        "radius": 1.55,
-        "avg_ionic_radius": 1.09
-    },
-    "In": {
-        "color": "#A67573",
-        "radius": 1.55,
-        "avg_ionic_radius": 0.94
-    },
-    "Sn": {
-        "color": "#668080",
-        "radius": 1.45,
-        "avg_ionic_radius": 0.83
-    },
-    "Sb": {
-        "color": "#9E63B5",
-        "radius": 1.45,
-        "avg_ionic_radius": 0.8300000000000001
-    },
-    "Te": {
-        "color": "#D47A00",
-        "radius": 1.4,
-        "avg_ionic_radius": 1.2933333333333332
-    },
-    "I": {
-        "color": "#940094",
-        "radius": 1.4,
-        "avg_ionic_radius": 1.2733333333333334
-    },
-    "Xe": {
-        "color": "#429EB0",
-        "radius": 1,
-        "avg_ionic_radius": 0.62
-    },
-    "Cs": {
-        "color": "#57178F",
-        "radius": 2.6,
-        "avg_ionic_radius": 1.81
-    },
-    "Ba": {
-        "color": "#00C900",
-        "radius": 2.15,
-        "avg_ionic_radius": 1.49
-    },
-    "La": {
-        "color": "#70D4FF",
-        "radius": 1.95,
-        "avg_ionic_radius": 1.172
-    },
-    "Ce": {
-        "color": "#FFFFC7",
-        "radius": 1.85,
-        "avg_ionic_radius": 1.08
-    },
-    "Pr": {
-        "color": "#D9FFC7",
-        "radius": 1.85,
-        "avg_ionic_radius": 1.06
-    },
-    "Nd": {
-        "color": "#C7FFC7",
-        "radius": 1.85,
-        "avg_ionic_radius": 1.2765
-    },
-    "Pm": {
-        "color": "#A3FFC7",
-        "radius": 1.85,
-        "avg_ionic_radius": 1.11
-    },
-    "Sm": {
-        "color": "#8FFFC7",
-        "radius": 1.85,
-        "avg_ionic_radius": 1.229
-    },
-    "Eu": {
-        "color": "#61FFC7",
-        "radius": 1.85,
-        "avg_ionic_radius": 1.1985000000000001
-    },
-    "Gd": {
-        "color": "#45FFC7",
-        "radius": 1.8,
-        "avg_ionic_radius": 1.075
-    },
-    "Tb": {
-        "color": "#30FFC7",
-        "radius": 1.75,
-        "avg_ionic_radius": 0.9815
-    },
-    "Dy": {
-        "color": "#1FFFC7",
-        "radius": 1.75,
-        "avg_ionic_radius": 1.131
-    },
-    "Ho": {
-        "color": "#00FF9C",
-        "radius": 1.75,
-        "avg_ionic_radius": 1.041
-    },
-    "Er": {
-        "color": "#00E675",
-        "radius": 1.75,
-        "avg_ionic_radius": 1.03
-    },
-    "Tm": {
-        "color": "#00D452",
-        "radius": 1.75,
-        "avg_ionic_radius": 1.095
-    },
-    "Yb": {
-        "color": "#00BF38",
-        "radius": 1.75,
-        "avg_ionic_radius": 1.084
-    },
-    "Lu": {
-        "color": "#00AB24",
-        "radius": 1.75,
-        "avg_ionic_radius": 1.001
-    },
-    "Hf": {
-        "color": "#4DC2FF",
-        "radius": 1.55,
-        "avg_ionic_radius": 0.85
-    },
-    "Ta": {
-        "color": "#4DA6FF",
-        "radius": 1.45,
-        "avg_ionic_radius": 0.82
-    },
-    "W": {
-        "color": "#2194D6",
-        "radius": 1.35,
-        "avg_ionic_radius": 0.7666666666666666
-    },
-    "Re": {
-        "color": "#267DAB",
-        "radius": 1.35,
-        "avg_ionic_radius": 0.7125
-    },
-    "Os": {
-        "color": "#266696",
-        "radius": 1.3,
-        "avg_ionic_radius": 0.673
-    },
-    "Ir": {
-        "color": "#175487",
-        "radius": 1.35,
-        "avg_ionic_radius": 0.765
-    },
-    "Pt": {
-        "color": "#D0D0E0",
-        "radius": 1.35,
-        "avg_ionic_radius": 0.805
-    },
-    "Au": {
-        "color": "#FFD123",
-        "radius": 1.35,
-        "avg_ionic_radius": 1.07
-    },
-    "Hg": {
-        "color": "#B8B8D0",
-        "radius": 1.5,
-        "avg_ionic_radius": 1.245
-    },
-    "Tl": {
-        "color": "#A6544D",
-        "radius": 1.9,
-        "avg_ionic_radius": 1.3325
-    },
-    "Pb": {
-        "color": "#575961",
-        "radius": 1.8,
-        "avg_ionic_radius": 1.1225
-    },
-    "Bi": {
-        "color": "#9E4FB5",
-        "radius": 1.6,
-        "avg_ionic_radius": 1.035
-    },
-    "Po": {
-        "color": "#AB5C00",
-        "radius": 1.9,
-        "avg_ionic_radius": 0.9450000000000001
-    },
-    "At": {
-        "color": "#754F45",
-        "radius": 1,
-        "avg_ionic_radius": 0.76
-    },
-    "Rn": {
-        "color": "#428296",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Fr": {
-        "color": "#420066",
-        "radius": 1,
-        "avg_ionic_radius": 1.94
-    },
-    "Ra": {
-        "color": "#007D00",
-        "radius": 2.15,
-        "avg_ionic_radius": 1.62
-    },
-    "Ac": {
-        "color": "#70ABFA",
-        "radius": 1.95,
-        "avg_ionic_radius": 1.26
-    },
-    "Th": {
-        "color": "#00BAFF",
-        "radius": 1.8,
-        "avg_ionic_radius": 1.08
-    },
-    "Pa": {
-        "color": "#00A1FF",
-        "radius": 1.8,
-        "avg_ionic_radius": 1.04
-    },
-    "U": {
-        "color": "#008FFF",
-        "radius": 1.75,
-        "avg_ionic_radius": 0.99125
-    },
-    "Np": {
-        "color": "#0080FF",
-        "radius": 1.75,
-        "avg_ionic_radius": 1.0
-    },
-    "Pu": {
-        "color": "#006BFF",
-        "radius": 1.75,
-        "avg_ionic_radius": 0.9674999999999999
-    },
-    "Am": {
-        "color": "#545CF2",
-        "radius": 1.75,
-        "avg_ionic_radius": 1.1683333333333332
-    },
-    "Cm": {
-        "color": "#785CE3",
-        "radius": 1,
-        "avg_ionic_radius": 1.05
-    },
-    "Bk": {
-        "color": "#8A4FE3",
-        "radius": 1,
-        "avg_ionic_radius": 1.0350000000000001
-    },
-    "Cf": {
-        "color": "#A136D4",
-        "radius": 1,
-        "avg_ionic_radius": 1.0255
-    },
-    "Es": {
-        "color": "#B31FD4",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Fm": {
-        "color": "#B31FBA",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Md": {
-        "color": "#B30DA6",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "No": {
-        "color": "#BD0D87",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Lr": {
-        "color": "#C70066",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Rf": {
-        "color": "#CC0059",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Db": {
-        "color": "#D1004F",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Sg": {
-        "color": "#D90045",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Bh": {
-        "color": "#E00038",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Hs": {
-        "color": "#E6002E",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    },
-    "Mt": {
-        "color": "#EB0026",
-        "radius": 1,
-        "avg_ionic_radius": 0.0
-    }
+  "H": {
+    "color": "#FFCCCC",
+    "radius": 0.46,
+    "vdw_radius": 1.2,
+    "ionic_radius": 0.2
+  },
+  "He": {
+    "color": "#FCE9CF",
+    "radius": 1.22,
+    "vdw_radius": 1.4,
+    "ionic_radius": 1.22
+  },
+  "Li": {
+    "color": "#86E074",
+    "radius": 1.57,
+    "vdw_radius": 1.4,
+    "ionic_radius": 0.59
+  },
+  "Be": {
+    "color": "#5FD87B",
+    "radius": 1.12,
+    "vdw_radius": 1.4,
+    "ionic_radius": 0.27
+  },
+  "B": {
+    "color": "#20A20F",
+    "radius": 0.81,
+    "vdw_radius": 1.4,
+    "ionic_radius": 0.11
+  },
+  "C": {
+    "color": "#814929",
+    "radius": 0.77,
+    "vdw_radius": 1.7,
+    "ionic_radius": 0.15
+  },
+  "N": {
+    "color": "#B0BAE6",
+    "radius": 0.74,
+    "vdw_radius": 1.55,
+    "ionic_radius": 1.46
+  },
+  "O": {
+    "color": "#FF0300",
+    "radius": 0.74,
+    "vdw_radius": 1.52,
+    "ionic_radius": 1.4
+  },
+  "F": {
+    "color": "#B0BAE6",
+    "radius": 0.72,
+    "vdw_radius": 1.47,
+    "ionic_radius": 1.33
+  },
+  "Ne": {
+    "color": "#FF38B5",
+    "radius": 1.6,
+    "vdw_radius": 1.54,
+    "ionic_radius": 1.6
+  },
+  "Na": {
+    "color": "#FADD3D",
+    "radius": 1.91,
+    "vdw_radius": 1.54,
+    "ionic_radius": 1.02
+  },
+  "Mg": {
+    "color": "#FC7C16",
+    "radius": 1.6,
+    "vdw_radius": 1.54,
+    "ionic_radius": 0.72
+  },
+  "Al": {
+    "color": "#81B3D6",
+    "radius": 1.43,
+    "vdw_radius": 1.54,
+    "ionic_radius": 0.39
+  },
+  "Si": {
+    "color": "#1B3BFA",
+    "radius": 1.18,
+    "vdw_radius": 2.1,
+    "ionic_radius": 0.26
+  },
+  "P": {
+    "color": "#C19CC3",
+    "radius": 1.1,
+    "vdw_radius": 1.8,
+    "ionic_radius": 0.17
+  },
+  "S": {
+    "color": "#FFFA00",
+    "radius": 1.04,
+    "vdw_radius": 1.8,
+    "ionic_radius": 1.84
+  },
+  "Cl": {
+    "color": "#32FC03",
+    "radius": 0.99,
+    "vdw_radius": 1.75,
+    "ionic_radius": 1.81
+  },
+  "Ar": {
+    "color": "#CFFEC5",
+    "radius": 1.92,
+    "vdw_radius": 1.88,
+    "ionic_radius": 1.92
+  },
+  "K": {
+    "color": "#A122F7",
+    "radius": 2.35,
+    "vdw_radius": 1.88,
+    "ionic_radius": 1.51
+  },
+  "Ca": {
+    "color": "#5B96BE",
+    "radius": 1.97,
+    "vdw_radius": 1.88,
+    "ionic_radius": 1.12
+  },
+  "Sc": {
+    "color": "#B663AC",
+    "radius": 1.64,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.745
+  },
+  "Ti": {
+    "color": "#78CAFF",
+    "radius": 1.47,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.605
+  },
+  "V": {
+    "color": "#E61A00",
+    "radius": 1.35,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.58
+  },
+  "Cr": {
+    "color": "#00009E",
+    "radius": 1.29,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.615
+  },
+  "Mn": {
+    "color": "#A9099E",
+    "radius": 1.37,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.83
+  },
+  "Fe": {
+    "color": "#B57200",
+    "radius": 1.26,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.78
+  },
+  "Co": {
+    "color": "#0000AF",
+    "radius": 1.25,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.745
+  },
+  "Ni": {
+    "color": "#B8BCBE",
+    "radius": 1.25,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.69
+  },
+  "Cu": {
+    "color": "#2247DD",
+    "radius": 1.28,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.73
+  },
+  "Zn": {
+    "color": "#8F9082",
+    "radius": 1.37,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.74
+  },
+  "Ga": {
+    "color": "#9FE474",
+    "radius": 1.53,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.62
+  },
+  "Ge": {
+    "color": "#7E6FA6",
+    "radius": 1.22,
+    "vdw_radius": 1.88,
+    "ionic_radius": 0.53
+  },
+  "As": {
+    "color": "#75D057",
+    "radius": 1.21,
+    "vdw_radius": 1.85,
+    "ionic_radius": 0.335
+  },
+  "Se": {
+    "color": "#9AEF10",
+    "radius": 1.04,
+    "vdw_radius": 1.9,
+    "ionic_radius": 1.98
+  },
+  "Br": {
+    "color": "#7F3103",
+    "radius": 1.14,
+    "vdw_radius": 1.85,
+    "ionic_radius": 1.96
+  },
+  "Kr": {
+    "color": "#FAC1F3",
+    "radius": 1.98,
+    "vdw_radius": 2.02,
+    "ionic_radius": 1.98
+  },
+  "Rb": {
+    "color": "#FF0099",
+    "radius": 2.5,
+    "vdw_radius": 2.02,
+    "ionic_radius": 1.61
+  },
+  "Sr": {
+    "color": "#00FF27",
+    "radius": 2.15,
+    "vdw_radius": 2.02,
+    "ionic_radius": 1.26
+  },
+  "Y": {
+    "color": "#67988E",
+    "radius": 1.82,
+    "vdw_radius": 2.02,
+    "ionic_radius": 1.019
+  },
+  "Zr": {
+    "color": "#00FF00",
+    "radius": 1.6,
+    "vdw_radius": 2.02,
+    "ionic_radius": 0.72
+  },
+  "Nb": {
+    "color": "#4CB376",
+    "radius": 1.47,
+    "vdw_radius": 2.02,
+    "ionic_radius": 0.64
+  },
+  "Mo": {
+    "color": "#B486B0",
+    "radius": 1.4,
+    "vdw_radius": 2.02,
+    "ionic_radius": 0.59
+  },
+  "Tc": {
+    "color": "#CDAFCB",
+    "radius": 1.35,
+    "vdw_radius": 2.02,
+    "ionic_radius": 0.56
+  },
+  "Ru": {
+    "color": "#CFB8AE",
+    "radius": 1.34,
+    "vdw_radius": 2.02,
+    "ionic_radius": 0.62
+  },
+  "Rh": {
+    "color": "#CED2AB",
+    "radius": 1.34,
+    "vdw_radius": 2.02,
+    "ionic_radius": 0.665
+  },
+  "Pd": {
+    "color": "#C2C4B9",
+    "radius": 1.37,
+    "vdw_radius": 2.02,
+    "ionic_radius": 0.86
+  },
+  "Ag": {
+    "color": "#B8BCBE",
+    "radius": 1.44,
+    "vdw_radius": 2.02,
+    "ionic_radius": 1.15
+  },
+  "Cd": {
+    "color": "#F31FDC",
+    "radius": 1.52,
+    "vdw_radius": 2.02,
+    "ionic_radius": 0.95
+  },
+  "In": {
+    "color": "#D781BB",
+    "radius": 1.67,
+    "vdw_radius": 2.02,
+    "ionic_radius": 0.8
+  },
+  "Sn": {
+    "color": "#9B8FBA",
+    "radius": 1.58,
+    "vdw_radius": 2.02,
+    "ionic_radius": 0.69
+  },
+  "Sb": {
+    "color": "#D88350",
+    "radius": 1.41,
+    "vdw_radius": 2.0,
+    "ionic_radius": 0.76
+  },
+  "Te": {
+    "color": "#ADA252",
+    "radius": 1.37,
+    "vdw_radius": 2.06,
+    "ionic_radius": 2.21
+  },
+  "I": {
+    "color": "#8F1F8B",
+    "radius": 1.33,
+    "vdw_radius": 1.98,
+    "ionic_radius": 2.2
+  },
+  "Xe": {
+    "color": "#9BA1F8",
+    "radius": 2.18,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.48
+  },
+  "Cs": {
+    "color": "#0FFFB9",
+    "radius": 2.72,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.74
+  },
+  "Ba": {
+    "color": "#1EF02D",
+    "radius": 2.24,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.42
+  },
+  "La": {
+    "color": "#5AC449",
+    "radius": 1.88,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.16
+  },
+  "Ce": {
+    "color": "#D1FD06",
+    "radius": 1.82,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.97
+  },
+  "Pr": {
+    "color": "#FDE206",
+    "radius": 1.82,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.126
+  },
+  "Nd": {
+    "color": "#FC8E07",
+    "radius": 1.82,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.109
+  },
+  "Pm": {
+    "color": "#0000F5",
+    "radius": 1.81,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.093
+  },
+  "Sm": {
+    "color": "#FD067D",
+    "radius": 1.81,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.27
+  },
+  "Eu": {
+    "color": "#FB08D5",
+    "radius": 2.06,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.066
+  },
+  "Gd": {
+    "color": "#C004FF",
+    "radius": 1.79,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.053
+  },
+  "Tb": {
+    "color": "#7104FE",
+    "radius": 1.77,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.04
+  },
+  "Dy": {
+    "color": "#3106FD",
+    "radius": 1.77,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.027
+  },
+  "Ho": {
+    "color": "#0742FB",
+    "radius": 1.76,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.015
+  },
+  "Er": {
+    "color": "#49733B",
+    "radius": 1.75,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.004
+  },
+  "Tm": {
+    "color": "#0000E0",
+    "radius": 1.0,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.994
+  },
+  "Yb": {
+    "color": "#27FDF4",
+    "radius": 1.94,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.985
+  },
+  "Lu": {
+    "color": "#26FDB5",
+    "radius": 1.72,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.977
+  },
+  "Hf": {
+    "color": "#B4B459",
+    "radius": 1.59,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.71
+  },
+  "Ta": {
+    "color": "#B79B56",
+    "radius": 1.47,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.64
+  },
+  "W": {
+    "color": "#8E8A80",
+    "radius": 1.41,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.6
+  },
+  "Re": {
+    "color": "#B3B18E",
+    "radius": 1.37,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.53
+  },
+  "Os": {
+    "color": "#C9B179",
+    "radius": 1.35,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.63
+  },
+  "Ir": {
+    "color": "#C9CF73",
+    "radius": 1.36,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.625
+  },
+  "Pt": {
+    "color": "#CCC6BF",
+    "radius": 1.39,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.625
+  },
+  "Au": {
+    "color": "#FEB338",
+    "radius": 1.44,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.37
+  },
+  "Hg": {
+    "color": "#D3B8CC",
+    "radius": 1.55,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.02
+  },
+  "Tl": {
+    "color": "#96896D",
+    "radius": 1.71,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.885
+  },
+  "Pb": {
+    "color": "#53535B",
+    "radius": 1.75,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.19
+  },
+  "Bi": {
+    "color": "#D230F8",
+    "radius": 1.82,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.03
+  },
+  "Po": {
+    "color": "#0000FF",
+    "radius": 1.77,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.94
+  },
+  "At": {
+    "color": "#0000FF",
+    "radius": 0.62,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.62
+  },
+  "Rn": {
+    "color": "#FFFF00",
+    "radius": 0.8,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.8
+  },
+  "Fr": {
+    "color": "#000000",
+    "radius": 1.0,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.8
+  },
+  "Ra": {
+    "color": "#6EAA59",
+    "radius": 2.35,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.48
+  },
+  "Ac": {
+    "color": "#649E73",
+    "radius": 2.03,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.12
+  },
+  "Th": {
+    "color": "#26FE78",
+    "radius": 1.8,
+    "vdw_radius": 2.16,
+    "ionic_radius": 1.05
+  },
+  "Pa": {
+    "color": "#29FB35",
+    "radius": 1.63,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.78
+  },
+  "U": {
+    "color": "#7AA2AA",
+    "radius": 1.56,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.73
+  },
+  "Np": {
+    "color": "#4C4C4C",
+    "radius": 1.56,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.75
+  },
+  "Pu": {
+    "color": "#4C4C4C",
+    "radius": 1.64,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.86
+  },
+  "Am": {
+    "color": "#4C4C4C",
+    "radius": 1.73,
+    "vdw_radius": 2.16,
+    "ionic_radius": 0.975
+  },
+  "Cm": {
+    "color": "#785CE3",
+    "radius": 1.69,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Bk": {
+    "color": "#8A4FE3",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Cf": {
+    "color": "#A136D4",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Es": {
+    "color": "#B31FD4",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Fm": {
+    "color": "#B31FBA",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Md": {
+    "color": "#B30DA6",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "No": {
+    "color": "#BD0D87",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Lr": {
+    "color": "#C70066",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Rf": {
+    "color": "#CC0059",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Db": {
+    "color": "#D1004F",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Sg": {
+    "color": "#D90045",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Bh": {
+    "color": "#E00038",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Hs": {
+    "color": "#E6002E",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Mt": {
+    "color": "#EB0026",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Ds": {
+    "color": "#808080",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Rg": {
+    "color": "#808080",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Cn": {
+    "color": "#808080",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Nh": {
+    "color": "#808080",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Fl": {
+    "color": "#808080",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Mc": {
+    "color": "#808080",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Lv": {
+    "color": "#808080",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Ts": {
+    "color": "#808080",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  },
+  "Og": {
+    "color": "#808080",
+    "radius": 2.0,
+    "vdw_radius": null,
+    "ionic_radius": null
+  }
 }

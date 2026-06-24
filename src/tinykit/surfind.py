@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Find surface-localized electronic states from PROCAR/OUTCAR."""
 import argparse
 import logging
 import numpy as np
@@ -51,7 +52,7 @@ def get_surface_character(structure_path, procar_path, outcar_path, layer_tolera
         if any(np.isclose(val, layer, atol=layer_tolerance) for layer in surface_layers)
     ]
     
-    logger.debug(f"Identified {len(surface_atom_indices)} atoms in the top 3 surface layers.")
+    logger.debug(f"Identified {len(surface_atom_indices)} atoms in the top {layers} surface layers.")
 
     results = []
 
@@ -93,8 +94,9 @@ def print_results(results, length=20):
               f"{state['kpoint_index']:<6} | {state['energy_fermi']:>10.4f} | "
               f"{state['surface_char']:.4f}")
 
-def main():
-    parser = argparse.ArgumentParser(description="Analyze VASP outputs to find surface-localized states.")
+def build_parser(parser=None):
+    parser = parser or argparse.ArgumentParser(
+        description="Analyze VASP outputs to find surface-localized states.")
     parser.add_argument("-s", "--structure", default="CONTCAR")
     parser.add_argument("-p", "--procar", default="PROCAR")
     parser.add_argument("-o", "--outcar", default="OUTCAR")
@@ -104,8 +106,12 @@ def main():
     parser.add_argument("-n", "--num", type=int, default=20)
     parser.add_argument("-l", "--layers", type=int, default=2, help="Number of layers considered surface")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logs")
+    return parser
 
-    args = parser.parse_args()
+
+def main(args=None):
+    if not isinstance(args, argparse.Namespace):
+        args = build_parser().parse_args(args)
     if args.verbose:
         logger.setLevel(logging.DEBUG)
 

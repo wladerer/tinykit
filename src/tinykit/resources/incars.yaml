@@ -1,0 +1,82 @@
+# Named INCAR presets used by the tinykit CLIs.
+# Edit calculation parameters here rather than hard-coding them in the sources.
+#
+#   adsorb  - relaxation of adsorbate-on-slab structures (used by `adsorb`)
+#   slab    - relaxation of bare slabs (used by `slabgen`)
+#   charge  - static / DOS calculation for charged slabs (used by `charge`)
+
+adsorb:
+  ALGO: Normal
+  EDIFF: 1.0e-06
+  EDIFFG: -0.01
+  ENCUT: 500
+  GGA: Pe
+  IBRION: 2
+  ISIF: 2
+  ISMEAR: 0
+  ISYM: 2
+  IVDW: 4
+  IWAVPR: 1
+  KPAR: 16
+  LASPH: true
+  LCHARG: true
+  LMAXMIX: 6
+  LORBIT: 11
+  LREAL: Auto
+  LVHAR: true
+  LWAVE: false
+  NELM: 60
+  NSW: 100
+  POTIM: 0.4
+  PREC: Accurate
+  SIGMA: 0.02
+  NCORE: 64
+
+slab:
+  ALGO: Normal
+  EDIFF: 1.0e-06
+  EDIFFG: -0.01
+  ENCUT: 500
+  GGA: Pe
+  IBRION: 2
+  ISIF: 2
+  ISMEAR: 0
+  ISYM: 2
+  IVDW: 4
+  IWAVPR: 1
+  LASPH: true
+  LCHARG: true
+  LMAXMIX: 6
+  LORBIT: 11
+  LREAL: Auto
+  LVHAR: true
+  LWAVE: false
+  NELM: 60
+  NSW: 100
+  POTIM: 0.4
+  PREC: Accurate
+  SIGMA: 0.02
+  NCORE: 64
+
+charge:
+  ALGO: Normal
+  EDIFF: 1.0e-06
+  EDIFFG: -0.01
+  ENCUT: 500
+  ISMEAR: 0
+  KPAR: 8
+  LAECHG: true
+  LASPH: true
+  LCHARG: true
+  LMAXMIX: 6
+  LORBIT: 11
+  LREAL: Auto
+  LVHAR: true
+  LWAVE: false
+  NELM: 200
+  NEDOS: 6001
+  PREC: Accurate
+  SIGMA: 0.02
+  NCORE: 128
+  EMIN: -8
+  EMAX: 10

@@ -1,63 +1,72 @@
 #!/usr/bin/env python
+"""Render bulk structures with POV-Ray."""
 import argparse
-import numpy as np
-import yaml
-from ase.io import read, write
+import logging
 import os
 
+import yaml
+from ase.io import read
+
+from tinykit.povray import (
+    resolve_atom_styles, render_structure, add_render_args, povray_settings_from_args,
+)
+
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logger = logging.getLogger(__name__)
 
 
-
-def array_to_rotation_string(array):
-    return f"{array[0]}x,{array[1]}y,{array[2]}z"
-
-def update_image_extension(string):
-    #if doesnt end with .pov add .pov
-    #also if it does not have an extension add .pov
-    if not string.endswith('.pov') and '.' not in string:
-        return f'{string}.pov'
-
-    if not string.endswith('.pov'):
-        return string.replace('.png', '.pov')
-
-    return string
-
-def main():
-    # Argument parser setup
-    parser = argparse.ArgumentParser(description='Visualize VASP structures with custom colors.')
-    parser.add_argument('input', help='Input VASP file (POSCAR or vasprun.xml)')
-    parser.add_argument('-o', '--output', help='Output file name', default='structure.png')
-    parser.add_argument('--rotation', help='Rotation of the slab', default=[-52, -48 ,-30], nargs=3, type=float)
+def build_parser(parser=None):
+    parser = parser or argparse.ArgumentParser(description='Render bulk structures with POV-Ray.')
+    parser.add_argument('input', help='Input structure file (POSCAR, CONTCAR, vasprun.xml, ...)')
+    parser.add_argument('-o', '--output', help='Output image file name', default='structure.png')
+    parser.add_argument('-c', '--colors', '--styles', dest='styles', default=None,
+                        help='YAML file overriding per-element color and/or radius, '
+                             'e.g. "Fe: [255,100,0]" or "C: {radius: 0.75}"')
+    parser.add_argument('--rotation', help='Rotation as three angles (x y z, degrees)',
+                        default=[-52, -48, -30], nargs=3, type=float)
     parser.add_argument('--supercell', help='Supercell dimensions', default=[1, 1, 1], nargs=3, type=int)
+    parser.add_argument('-v', '--verbose', help='Enable verbose output', action='store_true')
+    add_render_args(parser, default_height=900)
+    return parser
 
-    args = parser.parse_args()
 
-    # Determine input file type
+def main(args=None):
+    if not isinstance(args, argparse.Namespace):
+        args = build_parser().parse_args(args)
+
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+
     if not os.path.isfile(args.input):
-        print(f"Error: File '{args.input}' does not exist.")
+        logger.error(f"File '{args.input}' does not exist.")
         return
 
-    if args.input.endswith('CONTCAR'):
-        slab = read(args.input, index=-1)
-    elif args.input_file.endswith('vasprun.xml'):
-        slab = read(args.input, index=-1)
-    else:
-        print("Error: Input file must be a CONTCAR or vasprun.xml.")
+    try:
+        atoms = read(args.input, index=-1)
+    except Exception as e:
+        logger.error(f"Could not read structure from '{args.input}': {e}")
         return
 
-    slab = slab * args.supercell
+    atoms = atoms * args.supercell
+    logger.debug(f"Loaded {len(atoms)} atoms ({atoms.get_chemical_formula()}) after supercell {args.supercell}")
 
-    povray_settings = {
-        'canvas_width': None,  # Width of canvas in pixels
-        'canvas_height': 900,  # Height of canvas in pixels
-        'camera_dist': 20.,  # Distance from camera to front atom
-        'celllinewidth': 0.0,  # Thickness of cell lines
-    }
+    overrides = None
+    if args.styles:
+        with open(args.styles, 'r') as yaml_file:
+            overrides = yaml.safe_load(yaml_file)
+        logger.debug(f"Loaded style overrides for: {sorted(overrides)}")
 
-    args.output = update_image_extension(args.output)
-    rotation = array_to_rotation_string(args.rotation)
-    renderer = write(args.output, slab, format='pov', rotation=rotation,  povray_settings=povray_settings).render()
+    colors, radii = resolve_atom_styles(atoms, overrides=overrides, radius_scale=args.radius_scale)
+
+    povray_settings = povray_settings_from_args(args)
+
+    image_path = render_structure(
+        atoms, args.output, rotation=args.rotation,
+        colors=colors, radii=radii, povray_settings=povray_settings,
+        cleanup=not args.keep_pov,
+    )
+    logger.info(f"Wrote {image_path}")
+
 
 if __name__ == "__main__":
     main()
-

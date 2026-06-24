@@ -1,48 +1,25 @@
+"""Generate adsorbate-on-surface structures and their VASP inputs."""
+
 import json
+import random
 import numpy as np
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
-from pymatgen.io.vasp.inputs import Incar, Kpoints, Potcar, Poscar
-from pymatgen.io.vasp.sets import VaspInput
 from pymatgen.core.structure import Structure, Molecule
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from itertools import combinations
 import argparse
 
+from tinykit.vaspio import write_vasp_input
+from tinykit.cli import (
+    add_incar_args, resolve_incar, add_potcar_args,
+    add_kpoints_args, gamma_kpoints, add_overwrite_args,
+)
+
 molecules_json = Path(__file__).parent / "molecules.json"
 molecules = json.loads(molecules_json.read_text())
 molecules = {key: Molecule.from_dict(value) for key, value in molecules.items()}
-
-kpoints = Kpoints.gamma_automatic((5,5,1), shift=(0,0,0))
-
-incar_dict = {
-    "ALGO": "Normal",
-    "EDIFF": 1e-06,
-    "EDIFFG": -0.01,
-    "ENCUT": 500,
-    "GGA": "Pe",
-    "IBRION": 2,
-    "ISIF": 2,
-    "ISMEAR": 0,
-    "ISYM": 2,
-    "IVDW": 4,
-    "IWAVPR": 1,
-    "KPAR": 16,
-    "LASPH": True,
-    "LCHARG": True,
-    "LMAXMIX": 6,
-    "LORBIT": 11,
-    "LREAL": "Auto",
-    "LVHAR": True,
-    "LWAVE": False,
-    "NELM": 60,
-    "NSW": 100,
-    "POTIM": 0.4,
-    "PREC": "Accurate",
-    "SIGMA": 0.02,
-    "NCORE": 64,
-}
 
 
 def create_single_atom_molecule(element: str) -> Molecule:
@@ -217,7 +194,10 @@ def adsorb_sampling(
     symmetry_reduce: bool = True,
     symprec: float = 0.1,
     n_workers: int = 1,
-) -> tuple[list[Structure], list[str]]:
+    site_types: list[str] = None,
+    max_samples: int = None,
+    seed: int = None,
+) -> tuple[list[Structure], list[str], Structure, int]:
     """
     Generate all (symmetry-reduced) structures with `multiplicity` adsorbates.
 
@@ -249,6 +229,8 @@ def adsorb_sampling(
     n_slab_atoms = len(slab)
 
     labeled_sites = label_adsorption_sites(slab)
+    if site_types:
+        labeled_sites = [s for s in labeled_sites if s["type"] in site_types]
     if not labeled_sites:
         return [], [], slab, n_slab_atoms
 
@@ -268,6 +250,12 @@ def adsorb_sampling(
         valid_combos = symmetry_reduce_combos(
             slab, site_coords, valid_combos, symprec=symprec, n_workers=n_workers
         )
+
+    # Random sampling for large configuration spaces (after symmetry reduction
+    # so the sample is drawn from symmetry-inequivalent configurations).
+    if max_samples is not None and len(valid_combos) > max_samples:
+        rng = random.Random(seed)
+        valid_combos = sorted(rng.sample(valid_combos, max_samples))
 
     # Build structures in parallel, filtering atomic overlaps.
     build_args = [
@@ -369,48 +357,66 @@ def find_duplicate_structures(
 def write_directories(
     structures: list[Structure],
     directory: str,
+    incar,
+    kpoints,
     names: list[str] = None,
-    reference_incar_path: str = None,
-) -> None:
-    """Write each structure to its own subdirectory with VASP input files."""
+    functional: str = "PBE",
+    overwrite: bool = True,
+) -> int:
+    """Write each structure to its own subdirectory with VASP input files.
+
+    Returns the number of directories actually written.
+    """
+    written = 0
     for index, structure in enumerate(structures):
         subdir_name = names[index] if (names and index < len(names)) else f"adsorb_{index}"
-        path = Path(directory) / subdir_name
-        path.mkdir(parents=True, exist_ok=True)
-
-        poscar = Poscar(structure)
-        potcar = Potcar(symbols=poscar.site_symbols, functional="PBE")
-
-        if reference_incar_path:
-            incar = Incar.from_file(Path(reference_incar_path).resolve(strict=True))
-        else:
-            incar = Incar.from_dict(incar_dict)
-
-        VaspInput(incar=incar, kpoints=kpoints, poscar=poscar, potcar=potcar).write_input(path)
+        path = write_vasp_input(
+            structure, Path(directory) / subdir_name, incar, kpoints,
+            potcar_functional=functional, overwrite=overwrite,
+        )
+        if path is not None:
+            written += 1
+    return written
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Generate adsorbed structures")
+def build_parser(parser=None):
+    parser = parser or argparse.ArgumentParser(description="Generate adsorbed structures")
     parser.add_argument("structure", type=str, help="Path to structure file")
     parser.add_argument("molecule", type=str,
                         help="Molecule to adsorb (from JSON) or element symbol (e.g. 'CO', 'Au')")
-    parser.add_argument("--supercell", type=int, nargs=3, default=[1,1,1])
+    parser.add_argument("--supercell", type=int, nargs=3, default=[1, 1, 1])
     parser.add_argument("-d", "--distance", type=float, default=1.8,
                         help="Adsorbate height above surface site (single-adsorbate mode, Å)")
-    parser.add_argument("--incar", type=str, default=None, help="Path to reference INCAR file")
+    parser.add_argument("-o", "--output", default=None,
+                        help="Parent output directory (default: auto-named adsorbed_<mol>...)")
     parser.add_argument("--multiple", type=int, default=None,
                         help="Number of adsorbates to place simultaneously")
     parser.add_argument("--min-distance", type=float, default=2.0,
                         help="Minimum distance between adsorption site anchors (Å)")
     parser.add_argument("--min-atom-distance", type=float, default=1.5,
                         help="Minimum allowed distance between atoms of different adsorbates (Å)")
+    parser.add_argument("--sites", nargs="+", choices=["ontop", "bridge", "hollow"], default=None,
+                        help="Restrict adsorption to these site types (multi-adsorbate mode)")
+    parser.add_argument("--max-samples", type=int, default=None,
+                        help="Randomly sample at most this many symmetry-unique configurations")
+    parser.add_argument("--seed", type=int, default=None,
+                        help="Random seed for --max-samples (reproducible sampling)")
     parser.add_argument("--no-symmetry-reduce", action="store_true",
                         help="Skip symmetry reduction")
     parser.add_argument("-j", "--jobs", type=int, default=1,
                         help="Number of parallel worker processes (default: 1)")
     parser.add_argument("--verify", action="store_true",
-                        help="After generation, run StructureMatcher to confirm no symmetry-equivalent duplicates")
-    args = parser.parse_args()
+                        help="After generation, compare adsorbate canonical keys to confirm no symmetry-equivalent duplicates")
+    add_incar_args(parser, "adsorb")
+    add_kpoints_args(parser, (5, 5, 1))
+    add_potcar_args(parser)
+    add_overwrite_args(parser)
+    return parser
+
+
+def main(args=None):
+    if not isinstance(args, argparse.Namespace):
+        args = build_parser().parse_args(args)
 
     structure = Structure.from_file(args.structure)
     try:
@@ -419,6 +425,9 @@ def main():
         print(f"Error: {e}")
         return
 
+    incar = resolve_incar(args)
+    kpoints = gamma_kpoints(args)
+
     if args.multiple:
         structures, combo_labels, clean_slab, n_slab_atoms = adsorb_sampling(
             structure,
@@ -426,17 +435,22 @@ def main():
             args.multiple,
             min_distance=args.min_distance,
             min_atom_distance=args.min_atom_distance,
-            supercell=args.supercell if args.supercell != [1,1,1] else None,
+            supercell=args.supercell if args.supercell != [1, 1, 1] else None,
             symmetry_reduce=not args.no_symmetry_reduce,
             n_workers=args.jobs,
+            site_types=args.sites,
+            max_samples=args.max_samples,
+            seed=args.seed,
         )
 
         mol_tag = args.molecule
-        parent_dir = f"adsorbed_{mol_tag}_x{args.multiple}"
+        parent_dir = args.output or f"adsorbed_{mol_tag}_x{args.multiple}"
         names = [f"{mol_tag}_x{args.multiple}_{label}" for label in combo_labels]
 
-        write_directories(structures, parent_dir, names=names, reference_incar_path=args.incar)
-        print(f"Generated {len(structures)} structures with {args.multiple} {args.molecule} adsorbates")
+        written = write_directories(structures, parent_dir, incar, kpoints, names=names,
+                                    functional=args.functional, overwrite=args.overwrite)
+        print(f"Generated {len(structures)} structures with {args.multiple} {args.molecule} "
+              f"adsorbates ({written} written) in {parent_dir}/")
         for name in names:
             print(f"  {parent_dir}/{name}")
 
@@ -451,9 +465,12 @@ def main():
                 print("OK: all structures are symmetry-inequivalent.")
 
     else:
+        parent_dir = args.output or f"adsorbed_{args.molecule}"
         adsorbed_structures = adsorb(structure, molecule, args.supercell, distance=args.distance)
-        write_directories(adsorbed_structures, f"adsorbed_{args.molecule}", reference_incar_path=args.incar)
-        print(f"Generated {len(adsorbed_structures)} adsorbed structures for {args.molecule}")
+        written = write_directories(adsorbed_structures, parent_dir, incar, kpoints,
+                                    functional=args.functional, overwrite=args.overwrite)
+        print(f"Generated {len(adsorbed_structures)} adsorbed structures for {args.molecule} "
+              f"({written} written) in {parent_dir}/")
 
 
 if __name__ == "__main__":

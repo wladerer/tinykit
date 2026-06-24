@@ -21,8 +21,8 @@ def get_noncollinear_magmoms(vasprun):
     return np.sum(proj_mag, axis=(0, 1, 3))  # -> (natoms, 3)
 
 
-def main():
-    parser = argparse.ArgumentParser(
+def build_parser(parser=None):
+    parser = parser or argparse.ArgumentParser(
         description="Extract magnetic moments from vasprun.xml and write to CIF."
     )
     parser.add_argument(
@@ -41,7 +41,12 @@ def main():
         action="store_true",
         help="Use collinear (scalar) magmoms instead of non-collinear (vector)",
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main(args=None):
+    if not isinstance(args, argparse.Namespace):
+        args = build_parser().parse_args(args)
 
     parse_projected = not args.collinear
     vasprun = Vasprun(args.vasprun, parse_projected_eigen=parse_projected)
