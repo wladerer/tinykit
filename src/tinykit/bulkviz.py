@@ -56,7 +56,7 @@ def main(args=None):
             overrides = yaml.safe_load(yaml_file)
         logger.debug(f"Loaded style overrides for: {sorted(overrides)}")
 
-    colors, radii = resolve_atom_styles(atoms, overrides=overrides, radius_offset=-0.4)
+    colors, radii = resolve_atom_styles(atoms, overrides=overrides, radius_scale=args.radius_scale)
 
     povray_settings = povray_settings_from_args(args)
 

@@ -117,7 +117,12 @@ slabviz CONTCAR --rotation 90 0 45 --supercell 2 2 1 --width 1600
 
 # Per-element color and radius overrides
 slabviz CONTCAR -c styles.yaml
+
+# Dashed lines between atom pairs (e.g. an adsorbate and the surface)
+slabviz CONTCAR --bond 46 40 --bond-color '#cc2222' --bond-radius 0.07
 ```
+
+**Dashed bonds:** `--bond I J` draws a dashed line between zero-based atom indices `I` and `J` (repeatable; indices refer to the structure after `--supercell`). Tune with `--bond-color` (hex or comma-separated RGB), `--bond-radius`, `--dash-length`, and `--gap-length`.
 
 ### `bulkviz` - Bulk Structure Visualization
 Render bulk structures with POV-Ray, sharing the same style and rendering options as `slabviz`.
@@ -126,11 +131,11 @@ Render bulk structures with POV-Ray, sharing the same style and rendering option
 bulkviz POSCAR -o bulk.png --rotation -52 -48 -30 --show-cell
 ```
 
-**Rendering options (slabviz and bulkviz):** `--width`/`--height`, `--camera-dist`, `--orthographic`/`--perspective`, `--show-cell`, and `--keep-pov` (retain the intermediate `.pov`/`.ini` files for manual editing).
+**Rendering options (slabviz and bulkviz):** `--radius-scale` (ball-and-stick atom size relative to covalent radii; default `0.6`, use `1.0` for near space-filling), `--width`/`--height`, `--camera-dist`, `--orthographic`/`--perspective`, `--show-cell`, and `--keep-pov` (retain the intermediate `.pov`/`.ini` files for manual editing).
 
-### Style overrides
+### Colors and style overrides
 
-`slabviz` and `bulkviz` take a YAML file via `-c/--colors` (alias `--styles`) that overrides per-element color and/or radius without touching the bundled templates:
+Default atom colors and radii come from the **VESTA** palette (covalent radii), generated from VESTA's `elements.ini` by `resources/generate_atom_templates.py`; elements VESTA omits fall back to ASE's jmol colors. `slabviz` and `bulkviz` take a YAML file via `-c/--colors` (alias `--styles`) that overrides per-element color and/or radius for a figure without touching the bundled templates:
 
 ```yaml
 Fe: [255, 100, 0]            # color only (RGB 0-255)
@@ -194,6 +199,7 @@ src/tinykit/
 ├── povray.py       # Shared POV-Ray rendering helpers
 ├── molecules.json  # Pre-defined adsorbate molecules
 └── resources/
-    ├── incars.yaml          # Named INCAR presets
-    └── atom_templates.json  # Default atom colors and radii
+    ├── incars.yaml                  # Named INCAR presets
+    ├── atom_templates.json          # Default atom colors and radii (VESTA palette)
+    └── generate_atom_templates.py   # Regenerates the above from VESTA's elements.ini
 ```

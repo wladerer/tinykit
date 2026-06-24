@@ -9,7 +9,8 @@ from ase.calculators.vasp.vasp_auxiliary import VaspChargeDensity
 import os
 
 from tinykit.povray import (
-    resolve_atom_styles, render_structure, add_render_args, povray_settings_from_args,
+    resolve_atom_styles, render_structure, render_structure_with_bonds,
+    add_render_args, povray_settings_from_args, hex_to_rgb,
 )
 
 logging.basicConfig(
@@ -112,6 +113,18 @@ def create_isosurface(density, atoms, isovalue, color=(0.5, 0.5, 1.0), transmitt
     }
 
 
+def parse_rgb(spec):
+    """Parse a color given as a hex string ('#rrggbb') or comma-separated RGB
+    into a 0-1 tuple. Comma values are treated as 0-255 if any exceeds 1."""
+    spec = spec.strip()
+    if spec.startswith('#') or (len(spec) == 6 and ',' not in spec):
+        return tuple(c / 255 for c in hex_to_rgb(spec))
+    vals = [float(x) for x in spec.split(',')]
+    if any(v > 1 for v in vals):
+        vals = [v / 255 for v in vals]
+    return tuple(vals)
+
+
 def build_parser(parser=None):
     parser = parser or argparse.ArgumentParser(
         description='Visualize VASP structures with custom colors and charge density.')
@@ -123,7 +136,23 @@ def build_parser(parser=None):
     parser.add_argument('--rotation', help='Rotation of the slab', default=[0,0,0], nargs=3, type=float)
     parser.add_argument('--supercell', help='Supercell dimensions', default=[1, 1, 1], nargs=3, type=int)
     parser.add_argument('-v', '--verbose', help='Enable verbose output', action='store_true')
-    
+
+    # Dashed-bond annotations between explicit atom-index pairs
+    bonds = parser.add_argument_group('dashed bonds')
+    bonds.add_argument('--bond', metavar=('I', 'J'), nargs=2, type=int, action='append',
+                       dest='bonds', default=None,
+                       help='Draw a dashed line between zero-based atom indices I and J '
+                            '(repeatable). Indices refer to the structure after --supercell.')
+    bonds.add_argument('--bond-color', default='0.3,0.3,0.3',
+                       help='Dashed-line color as a hex string or comma-separated RGB '
+                            '0-255 (default: grey)')
+    bonds.add_argument('--bond-radius', type=float, default=0.10,
+                       help='Dashed-line thickness on the atom-radius scale (default: 0.10)')
+    bonds.add_argument('--dash-length', type=float, default=0.30,
+                       help='Length of each dash (default: 0.30)')
+    bonds.add_argument('--gap-length', type=float, default=0.22,
+                       help='Gap between dashes (default: 0.22)')
+
     # CHGCAR-specific arguments
     parser.add_argument('--chgcar', help='Path to CHGCAR file for charge density visualization', default=None)
     parser.add_argument('--input-is-chgcar', help='Treat input file as CHGCAR format', action='store_true')
@@ -194,7 +223,7 @@ def main(args=None):
         with open(args.styles, 'r') as yaml_file:
             overrides = yaml.safe_load(yaml_file)
 
-    colors, radii = resolve_atom_styles(slab, overrides=overrides, radius_offset=-0.4)
+    colors, radii = resolve_atom_styles(slab, overrides=overrides, radius_scale=args.radius_scale)
 
     povray_settings = povray_settings_from_args(args, extra={
         'point_lights': [],
@@ -299,11 +328,25 @@ def main(args=None):
             logger.info(f"Data has negative values but --dual-phase not set. Use --dual-phase to render both phases.")
 
 
-    render_structure(
-        slab, args.output, rotation=args.rotation,
-        colors=colors, radii=radii, povray_settings=povray_settings,
-        isosurface_data=isosurface_data, cleanup=not args.keep_pov,
-    )
+    if args.bonds:
+        n = len(slab)
+        for i, j in args.bonds:
+            if not (0 <= i < n and 0 <= j < n):
+                logger.warning(f"Bond ({i}, {j}) skipped: index out of range (0-{n - 1})")
+        logger.info(f"Drawing {len(args.bonds)} dashed bond(s)")
+        render_structure_with_bonds(
+            slab, args.bonds, args.output, rotation=args.rotation,
+            colors=colors, radii=radii, povray_settings=povray_settings,
+            isosurface_data=isosurface_data, cleanup=not args.keep_pov,
+            bond_color=parse_rgb(args.bond_color), bond_radius=args.bond_radius,
+            dash_length=args.dash_length, gap_length=args.gap_length,
+        )
+    else:
+        render_structure(
+            slab, args.output, rotation=args.rotation,
+            colors=colors, radii=radii, povray_settings=povray_settings,
+            isosurface_data=isosurface_data, cleanup=not args.keep_pov,
+        )
 
 if __name__ == "__main__":
     main()
