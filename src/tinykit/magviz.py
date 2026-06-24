@@ -2,16 +2,25 @@
 """Extract magnetic moments from vasprun.xml and write to CIF."""
 
 import argparse
+from pathlib import Path
+
 import numpy as np
-from pymatgen.io.vasp import Vasprun
+from pymatgen.io.vasp import Outcar, Vasprun
 from pymatgen.io.cif import CifWriter
 
 
-def get_collinear_magmoms(vasprun):
-    """Extract collinear (scalar) magmoms from the final ionic step."""
-    mag = vasprun.magnetization  # tuple of dicts, one per site
-    # Each dict has orbital contributions; 'tot' is the total moment
-    return [site_mag["tot"] for site_mag in mag[-1]]  # last ionic step
+def get_collinear_magmoms(outcar):
+    """Extract collinear (scalar) per-atom magmoms from an Outcar.
+
+    Collinear moments live in the OUTCAR (not the vasprun), one total per atom.
+    """
+    return [site_mag["tot"] for site_mag in outcar.magnetization]
+
+
+def _sibling_outcar(path):
+    """Resolve the OUTCAR for a given path (the path itself, or its sibling)."""
+    p = Path(path)
+    return p if p.name == "OUTCAR" else p.parent / "OUTCAR"
 
 
 def get_noncollinear_magmoms(vasprun):
@@ -19,6 +28,22 @@ def get_noncollinear_magmoms(vasprun):
     # projected_magnetisation shape: (nkpoints, nbands, natoms, norbitals, 3)
     proj_mag = vasprun.projected_magnetisation
     return np.sum(proj_mag, axis=(0, 1, 3))  # -> (natoms, 3)
+
+
+def get_moment_vectors(path, collinear=False):
+    """Return an (natoms, 3) array of Cartesian magnetic-moment vectors.
+
+    Collinear (scalar) moments are read from the OUTCAR (`path`, or the OUTCAR
+    beside it) and placed along the +z axis by sign, so they render as up/down
+    arrows. Non-collinear moments are read from the vasprun's projected
+    magnetisation and returned as-is. This is the form consumed by
+    `viz --moments`.
+    """
+    if collinear:
+        magmoms = get_collinear_magmoms(Outcar(str(_sibling_outcar(path))))
+        return np.array([[0.0, 0.0, float(m)] for m in magmoms])
+    vasprun = Vasprun(path, parse_projected_eigen=True)
+    return np.asarray(get_noncollinear_magmoms(vasprun), dtype=float)
 
 
 def build_parser(parser=None):
@@ -48,15 +73,14 @@ def main(args=None):
     if not isinstance(args, argparse.Namespace):
         args = build_parser().parse_args(args)
 
-    parse_projected = not args.collinear
-    vasprun = Vasprun(args.vasprun, parse_projected_eigen=parse_projected)
-    structure = vasprun.final_structure.copy()
-
     if args.collinear:
-        magmoms = get_collinear_magmoms(vasprun)
+        structure = Vasprun(args.vasprun).final_structure.copy()
+        magmoms = get_collinear_magmoms(Outcar(str(_sibling_outcar(args.vasprun))))
         for site, mag in zip(structure, magmoms):
             site.properties["magmom"] = mag
     else:
+        vasprun = Vasprun(args.vasprun, parse_projected_eigen=True)
+        structure = vasprun.final_structure.copy()
         magmoms = get_noncollinear_magmoms(vasprun)
         for site, mag in zip(structure, magmoms):
             site.properties["magmom"] = mag.tolist()

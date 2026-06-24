@@ -9,8 +9,9 @@ import os
 
 from tinykit.povray import (
     resolve_atom_styles, render_structure, render_structure_with_bonds,
-    add_render_args, povray_settings_from_args, hex_to_rgb,
+    render_structure_with_moments, add_render_args, povray_settings_from_args, hex_to_rgb,
 )
+from tinykit.magviz import get_moment_vectors
 from tinykit.cli import get_logger
 
 logger = get_logger(__name__)
@@ -148,6 +149,19 @@ def build_parser(parser=None):
                        help='Length of each dash (default: 0.30)')
     bonds.add_argument('--gap-length', type=float, default=0.22,
                        help='Gap between dashes (default: 0.22)')
+
+    # Magnetic-moment arrows
+    moments = parser.add_argument_group('magnetic moments')
+    moments.add_argument('--moments', nargs='?', const='vasprun.xml', default=None,
+                         metavar='VASPRUN',
+                         help='Draw magnetic-moment arrows from a vasprun.xml '
+                              '(default file: vasprun.xml). Atom order/count must '
+                              'match the input structure.')
+    moments.add_argument('--collinear', action='store_true',
+                         help='Treat moments as collinear scalars along z '
+                              '(default: non-collinear vectors)')
+    moments.add_argument('--moment-length', type=float, default=2.8,
+                         help='Arrow length for a unit moment (default: 2.8)')
 
     # CHGCAR-specific arguments
     parser.add_argument('--chgcar', help='Path to CHGCAR file for charge density visualization', default=None)
@@ -324,7 +338,27 @@ def main(args=None):
             logger.info(f"Data has negative values but --dual-phase not set. Use --dual-phase to render both phases.")
 
 
-    if args.bonds:
+    if args.moments is not None:
+        moments = get_moment_vectors(args.moments, collinear=args.collinear)
+        ncells = int(np.prod(args.supercell))
+        if ncells > 1:
+            # ase tiles atoms in block-repeat order, so repeat the moment block.
+            moments = np.tile(moments, (ncells, 1))
+        if len(moments) != len(slab):
+            raise ValueError(
+                f"Moment count ({len(moments)}) does not match atom count "
+                f"({len(slab)}); ensure --moments matches the input structure "
+                f"and --supercell.")
+        if isosurface_data or args.bonds:
+            logger.warning("--moments takes precedence; --isovalue/--bond ignored in this render.")
+        logger.info(f"Drawing magnetic-moment arrows from {args.moments}"
+                    f"{' (collinear)' if args.collinear else ''}")
+        render_structure_with_moments(
+            slab, moments, args.output, rotation=args.rotation,
+            colors=colors, radii=radii, povray_settings=povray_settings,
+            cleanup=not args.keep_pov, length=args.moment_length,
+        )
+    elif args.bonds:
         n = len(slab)
         for i, j in args.bonds:
             if not (0 <= i < n and 0 <= j < n):
