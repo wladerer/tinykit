@@ -127,9 +127,14 @@ tk viz CONTCAR -c styles.yaml
 
 # Dashed lines between atom pairs (e.g. an adsorbate and the surface)
 tk viz CONTCAR --bond 46 40 --bond-color '#cc2222' --bond-radius 0.07
+
+# Magnetic-moment arrows (collinear moments read from the OUTCAR)
+tk viz CONTCAR --moments OUTCAR --collinear --rotation -90 0 0
 ```
 
 **Dashed bonds:** `--bond I J` draws a dashed line between zero-based atom indices `I` and `J` (repeatable; indices refer to the structure after `--supercell`). Tune with `--bond-color` (hex or comma-separated RGB), `--bond-radius`, `--dash-length`, and `--gap-length`.
+
+**Magnetic moments:** `--moments [VASPRUN]` draws per-atom moment arrows (red = up, blue = down, green = in-plane), with `--moment-length` controlling arrow size. Collinear moments are read from the OUTCAR (`--collinear`, beside the given path or passed directly); non-collinear (vector) moments come from the vasprun's projected magnetisation. Moments are tiled to match `--supercell`, and their atom order must match the rendered structure. (To export moments to a CIF instead of rendering, use `tk magviz`.)
 
 **Rendering options:** `--radius-scale` (ball-and-stick atom size relative to covalent radii; default `0.6`, use `1.0` for near space-filling), `--width`/`--height`, `--camera-dist`, `--orthographic`/`--perspective`, `--show-cell`, and `--keep-pov` (retain the intermediate `.pov`/`.ini` files for manual editing).
 
