@@ -23,6 +23,9 @@ dependencies = [
     "argcomplete",
 ]
 
+[dependency-groups]
+dev = ["pytest"]
+
 [project.scripts]
 tk = "tinykit.cli:main"
 

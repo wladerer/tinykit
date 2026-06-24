@@ -390,11 +390,7 @@ def main(args=None):
         args = build_parser().parse_args(args)
 
     structure = Structure.from_file(args.structure)
-    try:
-        molecule = get_molecule(args.molecule)
-    except ValueError as e:
-        print(f"Error: {e}")
-        return
+    molecule = get_molecule(args.molecule)
 
     incar = resolve_incar(args)
     kpoints = gamma_kpoints(args)

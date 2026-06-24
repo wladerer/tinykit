@@ -8,13 +8,17 @@ circular imports.
 """
 
 import logging
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from pymatgen.io.vasp.inputs import Incar, Kpoints
 
 from tinykit.presets import load_incar_preset, available_presets
 
-__version__ = "0.0.1"
+try:
+    __version__ = version("tinykit")
+except PackageNotFoundError:  # not installed (e.g. running from a source tree)
+    __version__ = "0.0.0"
 
 # Subcommand name -> "module:function" providing build_parser/main.
 SUBCOMMANDS = {
@@ -110,6 +114,7 @@ def main(argv=None):
     # PYTHON_ARGCOMPLETE_OK
     import argparse
     import importlib
+    import os
 
     parser = argparse.ArgumentParser(
         prog="tk",
@@ -131,7 +136,16 @@ def main(argv=None):
         pass
 
     args = parser.parse_args(argv)
-    return args._run(args)
+    # Uniform error reporting: tools raise on failure; report cleanly here.
+    # Set TINYKIT_DEBUG=1 to get the full traceback instead.
+    try:
+        return args._run(args)
+    except KeyboardInterrupt:
+        parser.exit(130, "\nInterrupted.\n")
+    except Exception as exc:
+        if os.environ.get("TINYKIT_DEBUG"):
+            raise
+        parser.exit(1, f"Error: {exc}\n")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,6 @@
 """Find surface-localized electronic states from PROCAR/OUTCAR."""
 import argparse
 import numpy as np
-import sys
 from pymatgen.core import Structure
 from pymatgen.io.vasp import Procar, Outcar
 
@@ -18,14 +17,13 @@ def get_surface_character(structure_path, procar_path, outcar_path, layer_tolera
         procar = Procar(procar_path)
         outcar = Outcar(outcar_path)
     except Exception as e:
-        logger.error(f"Failed to load VASP files: {e}")
-        sys.exit(1)
+        raise RuntimeError(f"Failed to load VASP files: {e}") from e
 
     # 2. Safety check for Fermi Level
     e_fermi = outcar.efermi
     if e_fermi is None:
-        logger.error(f"Fermi level not found in {outcar_path}. Is the calculation finished?")
-        sys.exit(1)
+        raise RuntimeError(
+            f"Fermi level not found in {outcar_path}. Is the calculation finished?")
     
     logger.info(f"Fermi Level: {e_fermi:.4f} eV")
     logger.info(f"Filtering states within ±{energy_window} eV of Fermi.")

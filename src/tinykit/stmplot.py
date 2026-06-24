@@ -28,21 +28,20 @@ def calculate_z_coordinates(lattice, grid_shape):
 
 
 def simulate_constant_current_image(charge_density, z_coords, target_current):
-    """Simulate a constant current STM image (tip height map)."""
-    grid_shape = charge_density.shape
+    """Simulate a constant current STM image (tip height map).
+
+    For each (x, y) column, integrate the charge density along z and record the
+    height at which the running integral first reaches `target_current`. Columns
+    that never reach it are left at 0 (matching the previous behavior).
+    """
     dz = z_coords[1] - z_coords[0]
-    constant_current_image = np.zeros((grid_shape[0], grid_shape[1]))
-
-    for i in range(grid_shape[0]):
-        for j in range(grid_shape[1]):
-            cumulative_density = 0
-            for k, z in enumerate(z_coords):
-                cumulative_density += charge_density[i, j, k] * dz
-                if cumulative_density >= target_current:
-                    constant_current_image[i, j] = z
-                    break
-
-    return constant_current_image
+    cumulative = np.cumsum(charge_density, axis=2) * dz  # (nx, ny, nz)
+    reached = cumulative >= target_current
+    # argmax returns the first True index along z (0 where never reached).
+    first_idx = np.argmax(reached, axis=2)
+    image = z_coords[first_idx]
+    image[~reached.any(axis=2)] = 0.0
+    return image
 
 
 def normalize_image(image):

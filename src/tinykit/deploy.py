@@ -52,27 +52,11 @@ def main(args=None):
     if not isinstance(args, argparse.Namespace):
         args = build_parser().parse_args(args)
 
-    # Load structures from file
-    try: 
-        ase_structures = read(args.structures, index=':')
-        structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in ase_structures]
-    except Exception as e:
-        print(f"Error reading structures: {e}")
-        return
-
-    # Load incar and kpoints files
-    try:
-        incar = Incar.from_file(args.incar)
-    except Exception as e:
-        print(f"Error reading INCAR file: {e}")
-        return
-
-    try:
-        kpoints = Kpoints.from_file(args.kpoints)
-    except Exception as e:
-        print(f"Error reading KPOINTS file: {e}")
-        return
-
+    # Load structures, INCAR, and KPOINTS (errors propagate to the dispatcher).
+    ase_structures = read(args.structures, index=':')
+    structures = [AseAtomsAdaptor.get_structure(atoms) for atoms in ase_structures]
+    incar = Incar.from_file(args.incar)
+    kpoints = Kpoints.from_file(args.kpoints)
 
     if args.freeze is not None:
         # Freeze atoms in the structures
