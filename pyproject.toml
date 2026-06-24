@@ -21,6 +21,7 @@ dependencies = [
     "scipy",
     "pyyaml",
     "argcomplete",
+    "scikit-image",  # ASE marching-cubes for charge-density isosurfaces
 ]
 
 [dependency-groups]
