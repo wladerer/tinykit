@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-"""Render structures and charge-density isosurfaces with POV-Ray."""
+"""Render structures (slabs or bulk) and charge-density isosurfaces with POV-Ray."""
 import argparse
 import numpy as np
 import yaml
-import logging
 from ase.io import read
 from ase.calculators.vasp.vasp_auxiliary import VaspChargeDensity
 import os
@@ -12,12 +11,9 @@ from tinykit.povray import (
     resolve_atom_styles, render_structure, render_structure_with_bonds,
     add_render_args, povray_settings_from_args, hex_to_rgb,
 )
+from tinykit.cli import get_logger
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(levelname)s: %(message)s'
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def load_chgcar_data(chgcar_file):
@@ -127,8 +123,8 @@ def parse_rgb(spec):
 
 def build_parser(parser=None):
     parser = parser or argparse.ArgumentParser(
-        description='Visualize VASP structures with custom colors and charge density.')
-    parser.add_argument('input', help='Input VASP file (CONTCAR, vasprun.xml, or CHGCAR)')
+        description='Render structures (slabs or bulk) and charge-density isosurfaces.')
+    parser.add_argument('input', help='Input VASP file (POSCAR, CONTCAR, vasprun.xml, or CHGCAR)')
     parser.add_argument('-c', '--colors', '--styles', dest='styles', default=None,
                         help='YAML file overriding per-element color and/or radius, '
                              'e.g. "Fe: [255,100,0]" or "C: {radius: 0.75}"')
@@ -179,7 +175,7 @@ def main(args=None):
         args = build_parser().parse_args(args)
 
     if args.verbose:
-        logger.setLevel(logging.DEBUG)
+        get_logger(__name__, verbose=True)
         logger.debug("Verbose mode enabled")
 
     if not os.path.isfile(args.input):

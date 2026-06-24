@@ -1,19 +1,13 @@
 #!/usr/bin/env python3
 """Find surface-localized electronic states from PROCAR/OUTCAR."""
 import argparse
-import logging
 import numpy as np
-import sys
 from pymatgen.core import Structure
 from pymatgen.io.vasp import Procar, Outcar
 
-# Configure Logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-    datefmt="%H:%M:%S"
-)
-logger = logging.getLogger(__name__)
+from tinykit.cli import get_logger
+
+logger = get_logger(__name__)
 
 def get_surface_character(structure_path, procar_path, outcar_path, layer_tolerance=1.0, target_k_idx=None, energy_window=1.0, layers: int = 2):
     
@@ -23,14 +17,13 @@ def get_surface_character(structure_path, procar_path, outcar_path, layer_tolera
         procar = Procar(procar_path)
         outcar = Outcar(outcar_path)
     except Exception as e:
-        logger.error(f"Failed to load VASP files: {e}")
-        sys.exit(1)
+        raise RuntimeError(f"Failed to load VASP files: {e}") from e
 
     # 2. Safety check for Fermi Level
     e_fermi = outcar.efermi
     if e_fermi is None:
-        logger.error(f"Fermi level not found in {outcar_path}. Is the calculation finished?")
-        sys.exit(1)
+        raise RuntimeError(
+            f"Fermi level not found in {outcar_path}. Is the calculation finished?")
     
     logger.info(f"Fermi Level: {e_fermi:.4f} eV")
     logger.info(f"Filtering states within ±{energy_window} eV of Fermi.")
@@ -113,7 +106,7 @@ def main(args=None):
     if not isinstance(args, argparse.Namespace):
         args = build_parser().parse_args(args)
     if args.verbose:
-        logger.setLevel(logging.DEBUG)
+        get_logger(__name__, verbose=True)
 
     results = get_surface_character(
         args.structure, args.procar, args.outcar,

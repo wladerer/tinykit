@@ -7,13 +7,18 @@ modules lazily (inside ``main``) so this module stays import-cheap and free of
 circular imports.
 """
 
+import logging
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from pymatgen.io.vasp.inputs import Incar, Kpoints
 
 from tinykit.presets import load_incar_preset, available_presets
 
-__version__ = "0.0.1"
+try:
+    __version__ = version("tinykit")
+except PackageNotFoundError:  # not installed (e.g. running from a source tree)
+    __version__ = "0.0.0"
 
 # Subcommand name -> "module:function" providing build_parser/main.
 SUBCOMMANDS = {
@@ -21,12 +26,26 @@ SUBCOMMANDS = {
     "slabgen": "tinykit.slabgen",
     "charge": "tinykit.charge",
     "deploy": "tinykit.deploy",
-    "slabviz": "tinykit.slabviz",
-    "bulkviz": "tinykit.bulkviz",
+    "viz": "tinykit.viz",
     "stmplot": "tinykit.stmplot",
     "surfind": "tinykit.surfind",
     "magviz": "tinykit.magviz",
 }
+
+
+def get_logger(name: str, verbose: bool = False) -> logging.Logger:
+    """Return a console logger with a single handler and a consistent format.
+
+    Idempotent: repeated calls for the same name don't stack handlers. `verbose`
+    selects DEBUG over INFO. Shared so the tools don't each reinvent logging.
+    """
+    logger = logging.getLogger(name)
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+    return logger
 
 
 # ---------------------------------------------------------------------------
@@ -95,9 +114,10 @@ def main(argv=None):
     # PYTHON_ARGCOMPLETE_OK
     import argparse
     import importlib
+    import os
 
     parser = argparse.ArgumentParser(
-        prog="tinykit",
+        prog="tk",
         description="Toolkit for preparing and analyzing VASP calculations.",
     )
     parser.add_argument("--version", action="version", version=f"tinykit {__version__}")
@@ -116,7 +136,16 @@ def main(argv=None):
         pass
 
     args = parser.parse_args(argv)
-    return args._run(args)
+    # Uniform error reporting: tools raise on failure; report cleanly here.
+    # Set TINYKIT_DEBUG=1 to get the full traceback instead.
+    try:
+        return args._run(args)
+    except KeyboardInterrupt:
+        parser.exit(130, "\nInterrupted.\n")
+    except Exception as exc:
+        if os.environ.get("TINYKIT_DEBUG"):
+            raise
+        parser.exit(1, f"Error: {exc}\n")
 
 
 if __name__ == "__main__":

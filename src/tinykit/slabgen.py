@@ -3,7 +3,6 @@
 import argparse
 import warnings
 import json
-import logging
 import numpy as np
 from enum import Enum
 from pathlib import Path
@@ -14,35 +13,15 @@ from pymatgen.core.surface import Slab, SlabGenerator, generate_all_slabs
 from tinykit.vaspio import write_vasp_input
 from tinykit.cli import (
     add_incar_args, resolve_incar, add_potcar_args,
-    add_kpoints_args, gamma_kpoints, add_overwrite_args,
+    add_kpoints_args, gamma_kpoints, add_overwrite_args, get_logger,
 )
 
+logger = get_logger(__name__)
 
-# Configure logging
+
 def setup_logging(verbose: bool = False):
-    """
-    Set up logging configuration.
-
-    Args:
-        verbose: Enable verbose (DEBUG) logging
-    """
-    log_level = logging.DEBUG if verbose else logging.INFO
-
-    if verbose:
-        console_formatter = logging.Formatter('[%(levelname)s] %(message)s')
-    else:
-        console_formatter = logging.Formatter('%(message)s')
-
-    logger = logging.getLogger()
-    logger.setLevel(log_level)
-
-    # Avoid stacking duplicate handlers if invoked more than once per process.
-    if not logger.handlers:
-        handler = logging.StreamHandler()
-        handler.setFormatter(console_formatter)
-        logger.addHandler(handler)
-
-    return logger
+    """Set the slabgen logger verbosity (DEBUG when `verbose`) and return it."""
+    return get_logger(__name__, verbose=verbose)
 
 
 class FreezingMode(Enum):
@@ -71,7 +50,6 @@ def apply_selective_dynamics(
     Returns:
         Slab with selective dynamics applied
     """
-    logger = logging.getLogger()
     
     # Get surface normal
     normal = slab.normal
@@ -192,7 +170,6 @@ def generate_slabs_from_miller(
     Returns:
         List of Slab objects
     """
-    logger = logging.getLogger()
     logger.debug(f"  Creating SlabGenerator for {miller_index}, symmetrize={symmetrize}")
     
     # Create SlabGenerator - it always uses Angstroms for vacuum
@@ -242,7 +219,6 @@ def write_slab_directories(
     Returns:
         Number of slabs successfully written
     """
-    logger = logging.getLogger()
     written_count = 0
     skipped_duplicate = 0
     skipped_existing = 0
@@ -353,7 +329,6 @@ def _get_structure_hash(structure: Structure, decimals: int = 4) -> str:
     Returns:
         Hash string uniquely identifying the structure
     """
-    logger = logging.getLogger()
     
     # Get fractional coordinates and species
     frac_coords = structure.frac_coords
@@ -474,9 +449,9 @@ def build_parser(parser=None):
         help='Use unit planes for slab thickness (vacuum always in Angstroms)'
     )
     parser.add_argument(
-        '-d', '--directory',
-        default='GeneratedSlabs',
-        help='Parent directory of all slabs (default: GeneratedSlabs)',
+        '-o', '--output', dest='directory',
+        default='slabs',
+        help='Parent directory of all slabs (default: slabs)',
         type=str
     )
     parser.add_argument(
@@ -501,15 +476,10 @@ def main(args=None):
     if not isinstance(args, argparse.Namespace):
         args = build_parser().parse_args(args)
 
-    logger = setup_logging(args.verbose)
+    setup_logging(args.verbose)
     incar = resolve_incar(args)
     kpoints = gamma_kpoints(args)
-    # Load structure
-    try:
-        structure = Structure.from_file(args.structure)
-    except Exception as e:
-        print(f"Error: Could not load structure from {args.structure}: {e}")
-        return 1
+    structure = Structure.from_file(args.structure)
 
     # Convert freeze mode to enum
     freeze_mode = FreezingMode(args.freeze_mode)

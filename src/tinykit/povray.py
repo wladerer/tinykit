@@ -1,4 +1,4 @@
-"""Shared helpers for POV-Ray based structure rendering (slabviz, bulkviz)."""
+"""Shared helpers for POV-Ray based structure rendering (used by viz)."""
 
 import json
 import os
