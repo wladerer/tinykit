@@ -271,6 +271,8 @@ def render_structure_with_moments(
     povray_settings: dict = None,
     cleanup: bool = True,
     length: float = 2.8,
+    min_moment: float = 0.1,
+    scale_by_magnitude: bool = False,
     shaft_r: float = 0.16,
     head_r: float = 0.40,
     head_frac: float = 0.34,
@@ -281,25 +283,35 @@ def render_structure_with_moments(
 ) -> str:
     """Render an ASE Atoms object with per-atom magnetic-moment arrows.
 
-    `moments` is an (natoms, 3) array of Cartesian moment vectors (zeros where
-    there is no moment). Each nonzero moment becomes a ray-traced arrow centred
-    on its atom, coloured by orientation: +c (up_color), -c (dn_color),
-    in-plane (plane_color). The arrow is placed in ASE's rotated/scaled image
-    frame: atom centres are read back from the written .pov, and the moment
-    direction is rotated by the same matrix, so arrows track the atoms exactly.
+    `moments` is an (natoms, 3) array of Cartesian moment vectors. Atoms whose
+    moment magnitude is below `min_moment` get no arrow (this suppresses the
+    near-zero residual moments that otherwise clutter a figure). Each drawn
+    moment becomes a ray-traced arrow centred on its atom, coloured by
+    orientation: +c (up_color), -c (dn_color), in-plane (plane_color).
+
+    By default every arrow is drawn at the same `length` (direction only). With
+    `scale_by_magnitude`, arrow length is proportional to |m| relative to the
+    largest drawn moment, so relative moment sizes are visible. Arrows are
+    placed in ASE's rotated/scaled image frame: atom centres are read back from
+    the written .pov and the moment direction is rotated by the same matrix, so
+    arrows track the atoms exactly.
     """
     moments = np.asarray(moments, dtype=float)
+    norms = np.linalg.norm(moments, axis=1)
+    cutoff = max(min_moment, 1e-3)
+    drawn = norms >= cutoff
+    ref = norms[drawn].max() if drawn.any() else 1.0
 
     def geometry(locs, rads, scale, R):
         arrows = ""
         for i in range(len(atoms)):
-            m = moments[i]
-            n = float(np.linalg.norm(m))
-            if n < 1e-3 or i not in locs:
+            n = float(norms[i])
+            if n < cutoff or i not in locs:
                 continue
-            d_img = ((m / n * length) @ R) * scale
+            frac = (n / ref) if scale_by_magnitude else 1.0
+            d_img = ((moments[i] / n * length * frac) @ R) * scale
             base, tip = locs[i] - 0.5 * d_img, locs[i] + 0.5 * d_img
-            mz = m[2] / n
+            mz = moments[i][2] / n
             color = up_color if mz > 0.5 else dn_color if mz < -0.5 else plane_color
             arrows += _arrow_pov(base, tip, shaft_r * scale, head_r * scale,
                                  head_frac, color, finish)

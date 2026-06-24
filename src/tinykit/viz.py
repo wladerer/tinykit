@@ -161,7 +161,13 @@ def build_parser(parser=None):
                          help='Treat moments as collinear scalars along z '
                               '(default: non-collinear vectors)')
     moments.add_argument('--moment-length', type=float, default=2.8,
-                         help='Arrow length for a unit moment (default: 2.8)')
+                         help='Arrow length (default: 2.8)')
+    moments.add_argument('--moment-threshold', type=float, default=0.1,
+                         help='Skip arrows for |moment| below this (default: 0.1), '
+                              'hiding near-zero residual moments')
+    moments.add_argument('--moment-by-magnitude', action='store_true',
+                         help='Scale arrow length by |moment| (relative to the '
+                              'largest), instead of a fixed length')
 
     # CHGCAR-specific arguments
     parser.add_argument('--chgcar', help='Path to CHGCAR file for charge density visualization', default=None)
@@ -357,6 +363,8 @@ def main(args=None):
             slab, moments, args.output, rotation=args.rotation,
             colors=colors, radii=radii, povray_settings=povray_settings,
             cleanup=not args.keep_pov, length=args.moment_length,
+            min_moment=args.moment_threshold,
+            scale_by_magnitude=args.moment_by_magnitude,
         )
     elif args.bonds:
         n = len(slab)
