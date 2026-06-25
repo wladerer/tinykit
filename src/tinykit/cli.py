@@ -20,16 +20,13 @@ try:
 except PackageNotFoundError:  # not installed (e.g. running from a source tree)
     __version__ = "0.0.0"
 
-# Subcommand name -> "module:function" providing build_parser/main.
+# Subcommand name -> module providing build_parser/main.
 SUBCOMMANDS = {
     "adsorb": "tinykit.adsorb",
     "slabgen": "tinykit.slabgen",
-    "charge": "tinykit.charge",
-    "deploy": "tinykit.deploy",
     "viz": "tinykit.viz",
     "stmplot": "tinykit.stmplot",
     "surfind": "tinykit.surfind",
-    "magviz": "tinykit.magviz",
 }
 
 

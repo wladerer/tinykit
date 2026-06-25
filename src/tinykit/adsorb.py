@@ -14,10 +14,12 @@ import argparse
 from tinykit.vaspio import write_many
 from tinykit.cli import (
     add_incar_args, resolve_incar, add_potcar_args,
-    add_kpoints_args, gamma_kpoints, add_overwrite_args,
+    add_kpoints_args, gamma_kpoints, add_overwrite_args, get_logger,
 )
 
-molecules_json = Path(__file__).parent / "molecules.json"
+logger = get_logger(__name__)
+
+molecules_json = Path(__file__).parent / "resources" / "molecules.json"
 molecules = json.loads(molecules_json.read_text())
 molecules = {key: Molecule.from_dict(value) for key, value in molecules.items()}
 
@@ -345,7 +347,7 @@ def find_duplicate_structures(
 
     if labels and groups:
         for group in groups:
-            print(f"  Equivalent: {', '.join(labels[i] for i in group)}")
+            logger.info(f"  Equivalent: {', '.join(labels[i] for i in group)}")
 
     return groups
 
@@ -417,20 +419,20 @@ def main(args=None):
         jobs = zip(names, structures, [incar] * len(structures))
         written = write_many(jobs, parent_dir, kpoints,
                              potcar_functional=args.functional, overwrite=args.overwrite)
-        print(f"Generated {len(structures)} structures with {args.multiple} {args.molecule} "
-              f"adsorbates ({written} written) in {parent_dir}/")
+        logger.info(f"Generated {len(structures)} structures with {args.multiple} {args.molecule} "
+                    f"adsorbates ({written} written) in {parent_dir}/")
         for name in names:
-            print(f"  {parent_dir}/{name}")
+            logger.info(f"  {parent_dir}/{name}")
 
         if args.verify:
-            print("\nVerifying structural uniqueness via adsorbate canonical keys...")
+            logger.info("Verifying structural uniqueness via adsorbate canonical keys...")
             dups = find_duplicate_structures(
                 structures, clean_slab, n_slab_atoms, labels=names
             )
             if dups:
-                print(f"WARNING: found {len(dups)} group(s) of equivalent structures.")
+                logger.warning(f"Found {len(dups)} group(s) of equivalent structures.")
             else:
-                print("OK: all structures are symmetry-inequivalent.")
+                logger.info("OK: all structures are symmetry-inequivalent.")
 
     else:
         parent_dir = args.output or f"adsorbed_{args.molecule}"
@@ -439,8 +441,8 @@ def main(args=None):
         jobs = zip(names, adsorbed_structures, [incar] * len(adsorbed_structures))
         written = write_many(jobs, parent_dir, kpoints,
                              potcar_functional=args.functional, overwrite=args.overwrite)
-        print(f"Generated {len(adsorbed_structures)} adsorbed structures for {args.molecule} "
-              f"({written} written) in {parent_dir}/")
+        logger.info(f"Generated {len(adsorbed_structures)} adsorbed structures for {args.molecule} "
+                    f"({written} written) in {parent_dir}/")
 
 
 if __name__ == "__main__":

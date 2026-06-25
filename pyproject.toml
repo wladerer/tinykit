@@ -31,7 +31,7 @@ dev = ["pytest"]
 tk = "tinykit.cli:main"
 
 [tool.setuptools.package-data]
-tinykit = ["resources/*.json", "resources/*.yaml", "molecules.json"]
+tinykit = ["resources/*.json", "resources/*.yaml"]
 
 [build-system]
 requires = ["setuptools>=61.0"]
