@@ -1,4 +1,5 @@
-"""Dispatcher assembly, shared logger, and version single-sourcing."""
+"""Dispatch (assembly, routing, lazy listing), the error contract, and the
+shared logger."""
 import importlib
 
 import pytest
@@ -43,3 +44,51 @@ def test_get_logger_verbose_sets_debug():
     import logging
     logger = cli.get_logger("tinykit.test.verbose", verbose=True)
     assert logger.level == logging.DEBUG
+
+
+# --- dispatch routing --------------------------------------------------------
+
+def test_unknown_command_exits_nonzero():
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["bogus"])
+    assert exc.value.code == 2  # argparse 'invalid choice'
+
+
+def test_main_routes_to_only_the_named_command(monkeypatch):
+    import tinykit.viz as viz
+    called = {}
+    monkeypatch.setattr(viz, "main", lambda args: called.setdefault("input", args.input))
+    cli.main(["viz", "MYPOSCAR"])
+    assert called["input"] == "MYPOSCAR"
+
+
+# --- error contract ----------------------------------------------------------
+
+def _boom(_):
+    raise ValueError("nope")
+
+
+def test_run_returns_value():
+    assert cli._run(None, lambda a: 42) == 42
+
+
+def test_run_wraps_exception_as_clean_exit(capsys):
+    with pytest.raises(SystemExit) as exc:
+        cli._run(None, _boom)
+    assert exc.value.code == 1
+    assert "Error: nope" in capsys.readouterr().err
+
+
+def test_run_debug_env_reraises_original(monkeypatch):
+    monkeypatch.setenv("TINYKIT_DEBUG", "1")
+    with pytest.raises(ValueError):  # the real traceback, not a SystemExit
+        cli._run(None, _boom)
+
+
+def test_run_keyboard_interrupt_is_130(capsys):
+    def interrupt(_):
+        raise KeyboardInterrupt
+    with pytest.raises(SystemExit) as exc:
+        cli._run(None, interrupt)
+    assert exc.value.code == 130
+    assert "Interrupted" in capsys.readouterr().err
