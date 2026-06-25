@@ -2,8 +2,9 @@
 import numpy as np
 from ase import Atoms
 
-from tinykit.povray import default_color_map, default_radius_map, resolve_atom_styles
-from tinykit.viz import parse_rgb
+from tinykit.povray import (
+    default_color_map, default_radius_map, parse_rgb, resolve_atom_styles,
+)
 
 
 def test_hydrogen_is_vesta_pink_not_blue():
