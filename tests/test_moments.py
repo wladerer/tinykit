@@ -73,9 +73,7 @@ def _poscar(tmp_path):
 
 def test_viz_moments_dispatch_and_supercell_tiling(tmp_path, monkeypatch):
     p = _poscar(tmp_path)
-    # viz.main imports these lazily from their source modules, so patch there.
-    import tinykit.povray as povray
-    monkeypatch.setattr(magviz, "get_moment_vectors",
+    monkeypatch.setattr(viz, "get_moment_vectors",
                         lambda path, collinear=False: np.array([[0, 0, 3.0], [0, 0, -3.0]]))
     captured = {}
 
@@ -85,7 +83,7 @@ def test_viz_moments_dispatch_and_supercell_tiling(tmp_path, monkeypatch):
         captured["kw"] = kw
         return output
 
-    monkeypatch.setattr(povray, "render_structure_with_moments", fake_render)
+    monkeypatch.setattr(viz, "render_structure_with_moments", fake_render)
 
     # 2x1x1 supercell -> 4 atoms; the 2 moments must tile to 4 to match.
     args = viz.build_parser().parse_args(
@@ -102,11 +100,10 @@ def test_viz_moments_dispatch_and_supercell_tiling(tmp_path, monkeypatch):
 
 def test_viz_moments_count_mismatch_raises(tmp_path, monkeypatch):
     p = _poscar(tmp_path)
-    import tinykit.povray as povray
     # return the wrong number of moments for a 2-atom cell
-    monkeypatch.setattr(magviz, "get_moment_vectors",
+    monkeypatch.setattr(viz, "get_moment_vectors",
                         lambda path, collinear=False: np.zeros((3, 3)))
-    monkeypatch.setattr(povray, "render_structure_with_moments",
+    monkeypatch.setattr(viz, "render_structure_with_moments",
                         lambda *a, **k: pytest.fail("should not render on mismatch"))
     args = viz.build_parser().parse_args([str(p), "--moments", "vasprun.xml",
                                           "-o", str(tmp_path / "o.png")])
