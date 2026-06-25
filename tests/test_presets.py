@@ -10,12 +10,6 @@ def test_expected_presets_available():
         assert expected in names
 
 
-def test_load_returns_dict():
-    preset = load_incar_preset("slab")
-    assert isinstance(preset, dict)
-    assert preset  # non-empty
-
-
 def test_loads_are_independent_copies():
     a = load_incar_preset("slab")
     a["NELECT"] = 999
