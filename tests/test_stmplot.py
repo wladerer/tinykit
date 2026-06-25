@@ -2,7 +2,7 @@
 import numpy as np
 
 from tinykit.stmplot import (
-    contrast_limits, inplane_vectors, simulate_constant_current_image, tiled_meshgrid,
+    contrast_limits, simulate_constant_current_image, tiled_meshgrid,
 )
 
 

@@ -1,12 +1,13 @@
-#!/usr/bin/env python3
-"""Extract magnetic moments from vasprun.xml and write to CIF."""
+"""Extract per-atom magnetic moments from VASP output for `viz --moments`.
 
-import argparse
+A support module, not a subcommand: it reads the physical moments from the
+OUTCAR (collinear scalars or non-collinear vectors) so `viz` can draw them.
+"""
+
 from pathlib import Path
 
 import numpy as np
 from pymatgen.io.vasp import Outcar, Vasprun
-from pymatgen.io.cif import CifWriter
 
 
 def get_collinear_magmoms(outcar):
@@ -95,50 +96,11 @@ def get_moment_vectors(path, collinear=False):
     vectors = read_outcar_moment_vectors(outcar)
     if vectors is not None:
         return vectors
+    # An OUTCAR with no x/y/z vector tables is a collinear run; say so plainly
+    # rather than blindly trying to parse it as a vasprun.xml.
+    if outcar.exists():
+        raise ValueError(
+            f"{outcar} has no non-collinear magnetization (x/y/z) tables; it "
+            f"looks like a collinear run. Re-render with --collinear.")
     vasprun = Vasprun(path, parse_projected_eigen=True)
     return np.asarray(get_noncollinear_magmoms(vasprun), dtype=float)
-
-
-def build_parser(parser=None):
-    parser = parser or argparse.ArgumentParser(
-        description="Extract magnetic moments from vasprun.xml and write to CIF."
-    )
-    parser.add_argument(
-        "vasprun",
-        nargs="?",
-        default="vasprun.xml",
-        help="Path to vasprun.xml (default: vasprun.xml)",
-    )
-    parser.add_argument(
-        "-o", "--output",
-        default="magmoms.cif",
-        help="Output CIF filename (default: magmoms.cif)",
-    )
-    parser.add_argument(
-        "--collinear",
-        action="store_true",
-        help="Use collinear (scalar) magmoms instead of non-collinear (vector)",
-    )
-    return parser
-
-
-def main(args=None):
-    if not isinstance(args, argparse.Namespace):
-        args = build_parser().parse_args(args)
-
-    structure = Vasprun(args.vasprun).final_structure.copy()
-    if args.collinear:
-        magmoms = get_collinear_magmoms(Outcar(str(_sibling_outcar(args.vasprun))))
-        for site, mag in zip(structure, magmoms):
-            site.properties["magmom"] = mag
-    else:
-        magmoms = get_moment_vectors(args.vasprun, collinear=False)  # OUTCAR vectors
-        for site, mag in zip(structure, magmoms):
-            site.properties["magmom"] = [float(x) for x in mag]
-
-    CifWriter(structure, write_magmoms=True).write_file(args.output)
-    print(f"CIF with {'collinear' if args.collinear else 'non-collinear'} magnetic moments written to {args.output}")
-
-
-if __name__ == "__main__":
-    main()

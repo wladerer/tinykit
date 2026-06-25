@@ -1,5 +1,6 @@
 """Shared helpers for POV-Ray based structure rendering (used by viz)."""
 
+import contextlib
 import json
 import os
 from pathlib import Path
@@ -9,6 +10,47 @@ from ase.io import write
 
 _ATOM_TEMPLATES_PATH = Path(__file__).parent / "resources" / "atom_templates.json"
 _atom_templates = None
+
+
+def available_cpus() -> int:
+    """Number of CPUs this process may actually use.
+
+    Prefers the affinity mask (respects cgroup/taskset limits) and falls back to
+    the logical CPU count on platforms without `sched_getaffinity` (e.g. macOS).
+    Always at least 1.
+    """
+    try:
+        return len(os.sched_getaffinity(0))
+    except AttributeError:
+        return os.cpu_count() or 1
+
+
+@contextlib.contextmanager
+def _chdir(path):
+    """Temporarily run in `path`.
+
+    ASE invokes `povray <name>.ini` with no working directory, and the .ini
+    refers to the .pov/.png by basename. Rendering from the output file's own
+    directory is what lets `-o subdir/x.png` (or any absolute path) work instead
+    of only succeeding when the shell already sits in that directory.
+    """
+    prev = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prev)
+
+
+def _set_ini_threads(ini_path, n_threads: int) -> None:
+    """Append `Work_Threads=N` to a POV-Ray .ini so it uses all available cores.
+
+    ASE's .ini omits Work_Threads, and POV-Ray otherwise leaves cores idle on
+    some builds. Appended after ASE writes the .ini and before the render runs.
+    """
+    if n_threads and os.path.exists(ini_path):
+        with open(ini_path, "a") as fh:
+            fh.write(f"\nWork_Threads={n_threads}\n")
 
 
 def array_to_rotation_string(array) -> str:
@@ -41,6 +83,23 @@ def hex_to_rgb(hex_string: str) -> tuple:
 def normalize_colors(color_map: dict) -> dict:
     """Scale an element->RGB(0-255) map down to the 0-1 range POV-Ray expects."""
     return {k: tuple(c / 255 for c in v) for k, v in color_map.items()}
+
+
+def parse_rgb(spec) -> tuple:
+    """Parse a color into a 0-1 RGB tuple.
+
+    Accepts a '#rrggbb' hex string, a bare 'rrggbb' hex string, or a
+    comma-separated triple. Comma triples are read as 0-255 if any component
+    exceeds 1, otherwise taken as already on the 0-1 scale.
+    """
+    if isinstance(spec, (list, tuple)):
+        vals = [float(x) for x in spec]
+        return tuple(v / 255 for v in vals) if any(v > 1 for v in vals) else tuple(vals)
+    spec = spec.strip()
+    if spec.startswith('#') or (len(spec) == 6 and ',' not in spec):
+        return tuple(c / 255 for c in hex_to_rgb(spec))
+    vals = [float(x) for x in spec.split(',')]
+    return tuple(v / 255 for v in vals) if any(v > 1 for v in vals) else tuple(vals)
 
 
 def _load_atom_templates() -> dict:
@@ -180,7 +239,8 @@ def _arrow_pov(base, tip, shaft_r, head_r, head_frac, color, finish):
     """POV-Ray cylinder (shaft) + cone (head) for one arrow base->tip."""
     d = tip - base
     neck = base + (1.0 - head_frac) * d
-    v = lambda a: f"<{a[0]:.4f}, {a[1]:.4f}, {a[2]:.4f}>"
+    def v(a):
+        return f"<{a[0]:.4f}, {a[1]:.4f}, {a[2]:.4f}>"
     col = f"pigment {{ color rgb <{color[0]:.3f}, {color[1]:.3f}, {color[2]:.3f}> }}"
     fin = f"finish {{ {finish} }}"
     return (f"cylinder {{ {v(base)}, {v(neck)}, {shaft_r:.3f} {col} {fin} }}\n"
@@ -195,7 +255,8 @@ def _dashed_line_pov(base, tip, radius, dash_len, gap_len, color, finish):
     if length < 1e-9 or dash_len <= 0:
         return ""
     u = d / length
-    v = lambda a: f"<{a[0]:.4f}, {a[1]:.4f}, {a[2]:.4f}>"
+    def v(a):
+        return f"<{a[0]:.4f}, {a[1]:.4f}, {a[2]:.4f}>"
     col = f"pigment {{ color rgb <{color[0]:.3f}, {color[1]:.3f}, {color[2]:.3f}> }}"
     fin = f"finish {{ {finish} }}"
     period = dash_len + max(gap_len, 0.0)
@@ -253,7 +314,9 @@ def _render_with_geometry(
     with open(pov_path, "a") as fh:
         fh.write("\n// tinykit appended geometry\n" + geometry)
 
-    image_path = renderer.render()
+    _set_ini_threads(pov_path.replace(".pov", ".ini"), available_cpus())
+    with _chdir(os.path.dirname(os.path.abspath(pov_path))):
+        image_path = renderer.render()
     if cleanup:
         for intermediate in (pov_path, pov_path.replace(".pov", ".ini")):
             if os.path.exists(intermediate):
@@ -389,7 +452,7 @@ def render_structure(
     pov_path = update_image_extension(output)
     rotation_str = array_to_rotation_string(rotation)
 
-    image_path = write(
+    renderer = write(
         pov_path,
         atoms,
         format='pov',
@@ -398,7 +461,10 @@ def render_structure(
         radii=radii,
         povray_settings=povray_settings or {},
         isosurface_data=isosurface_data,
-    ).render()
+    )
+    _set_ini_threads(pov_path.replace('.pov', '.ini'), available_cpus())
+    with _chdir(os.path.dirname(os.path.abspath(pov_path))):
+        image_path = renderer.render()
 
     if cleanup:
         for intermediate in (pov_path, pov_path.replace('.pov', '.ini')):

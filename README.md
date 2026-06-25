@@ -24,9 +24,9 @@ eval "$(register-python-argcomplete tk)"
 
 ## Input generation
 
-`tk adsorb`, `tk slabgen`, and `tk charge` share the same INCAR/KPOINTS/POTCAR flags:
+`tk adsorb` and `tk slabgen` share the same INCAR/KPOINTS/POTCAR flags:
 
-- `--preset NAME` picks a named INCAR preset (`adsorb`, `slab`, `charge`). Presets live in `src/tinykit/resources/incars.yaml`.
+- `--preset NAME` picks a named INCAR preset (`adsorb`, `slab`). Presets live in `src/tinykit/resources/incars.yaml`.
 - `--incar FILE` uses your own INCAR instead.
 - `--kpoints KX KY KZ` sets a gamma-centered mesh.
 - `--functional NAME` sets the POTCAR family (default PBE).
@@ -57,28 +57,6 @@ tk slabgen POSCAR --hkl 111 --freeze-mode bottom --layers 2
 ```
 
 One Miller index or every index up to `--max-hkl`. Symmetric and asymmetric terminations, deduplicated. Selective dynamics with `center`, `bottom`, or `top` freezing.
-
-### deploy
-
-Turn a trajectory into one VASP directory per frame.
-
-```bash
-tk deploy structures.traj -i INCAR -k KPOINTS -o calcs/
-tk deploy structures.extxyz --freeze 10.0
-```
-
-Reads anything ASE reads (XDATCAR, traj, extxyz, and so on).
-
-### charge
-
-NELECT series for charged slabs.
-
-```bash
-tk charge POSCAR --start 0.1 --stop 1.0 --step 0.1 --kpoints 5 5 1
-tk charge POSCAR --dipole --start -0.5 --stop 0.5 --step 0.1
-```
-
-`--dipole` adds a dipole correction referenced at the center of mass.
 
 ## viz
 
@@ -158,15 +136,6 @@ Surface-localized states from PROCAR and OUTCAR.
 tk surfind -s CONTCAR -p PROCAR -o OUTCAR --window 1.0 --layers 2
 ```
 
-## magviz
-
-Write magnetic moments to a CIF. Same OUTCAR source as `viz --moments`.
-
-```bash
-tk magviz vasprun.xml -o magmoms.cif       # non-collinear (vector)
-tk magviz vasprun.xml --collinear          # collinear (scalar)
-```
-
 ## Errors
 
 Tools print `Error: ...` and exit nonzero. Set `TINYKIT_DEBUG=1` for the full traceback.
@@ -178,16 +147,15 @@ src/tinykit/
   cli.py       tk dispatcher and shared CLI helpers
   adsorb.py    adsorbates on surfaces
   slabgen.py   slab generation
-  deploy.py    batch VASP inputs from a trajectory
-  charge.py    charged slabs
   viz.py       structure, isosurface, bond, and moment rendering
+  chgcar.py    charge-density loading and isosurface assembly for viz
   stmplot.py   STM images
   surfind.py   surface states
-  magviz.py    magnetic moments to CIF
+  magviz.py    magnetic-moment extraction for viz --moments
   presets.py   INCAR presets
   vaspio.py    VASP input assembly and writing
   povray.py    POV-Ray rendering helpers
-  resources/   incars.yaml, atom_templates.json (VESTA palette), generator
+  resources/   incars.yaml, atom_templates.json (VESTA palette), molecules.json
 ```
 
 Tests run with `pytest`. They cover parsing and assembly without needing POTCARs or POV-Ray.

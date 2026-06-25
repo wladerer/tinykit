@@ -3,7 +3,6 @@
 #
 #   adsorb  - relaxation of adsorbate-on-slab structures (used by `adsorb`)
 #   slab    - relaxation of bare slabs (used by `slabgen`)
-#   charge  - static / DOS calculation for charged slabs (used by `charge`)
 
 adsorb:
   ALGO: Normal
@@ -57,26 +56,3 @@ slab:
   PREC: Accurate
   SIGMA: 0.02
   NCORE: 64
-
-charge:
-  ALGO: Normal
-  EDIFF: 1.0e-06
-  EDIFFG: -0.01
-  ENCUT: 500
-  ISMEAR: 0
-  KPAR: 8
-  LAECHG: true
-  LASPH: true
-  LCHARG: true
-  LMAXMIX: 6
-  LORBIT: 11
-  LREAL: Auto
-  LVHAR: true
-  LWAVE: false
-  NELM: 200
-  NEDOS: 6001
-  PREC: Accurate
-  SIGMA: 0.02
-  NCORE: 128
-  EMIN: -8
-  EMAX: 10

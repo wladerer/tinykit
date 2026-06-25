@@ -237,7 +237,7 @@ def write_slab_directories(
         
         # Apply selective dynamics BEFORE sorting to preserve layer structure
         if layers_to_relax is not None:
-            logger.debug(f"  Applying selective dynamics...")
+            logger.debug("  Applying selective dynamics...")
             slab = apply_selective_dynamics(slab, layers_to_relax, mode=freeze_mode)
 
         # Sort by species for consistent POSCAR formatting.
@@ -289,13 +289,13 @@ def write_slab_directories(
         path.mkdir(parents=True, exist_ok=True)
 
         try:
-            logger.debug(f"  Writing VASP input files...")
+            logger.debug("  Writing VASP input files...")
             write_vasp_input(slab, path, incar, kpoints, potcar_functional=functional)
 
             with open(path / "slab.json", "w") as f:
                 json.dump(slab.as_dict(), f, indent=2)
 
-            logger.info(f"  ✓ Written term_{termination_index} to {path.relative_to(root)}")
+            logger.info(f"  Wrote term_{termination_index} to {path.relative_to(root)}")
             written_count += 1
 
         except Exception as e:
@@ -306,7 +306,7 @@ def write_slab_directories(
             continue
 
     # Summary
-    logger.info(f"\nWrite summary:")
+    logger.info("Write summary:")
     logger.info(f"  Successfully written: {written_count}")
     if skipped_duplicate > 0:
         logger.info(f"  Skipped (duplicates): {skipped_duplicate}")
@@ -455,12 +455,6 @@ def build_parser(parser=None):
         type=str
     )
     parser.add_argument(
-        '--log-file',
-        type=str,
-        default=None,
-        help='Path to log file (default: no log file, console only)'
-    )
-    parser.add_argument(
         '-v', '--verbose',
         action='store_true',
         help='Enable verbose (DEBUG) logging'
@@ -489,7 +483,7 @@ def main(args=None):
     for thickness in args.thicknesses:
         if args.hkl is not None:
             miller_index = parse_miller_index(args.hkl)
-            print(f"Generating slabs for Miller index {miller_index}")
+            logger.info(f"Generating slabs for Miller index {miller_index}")
             
             slabs_asym = generate_slabs_from_miller(
                 structure=structure,
@@ -557,9 +551,9 @@ def main(args=None):
             functional=args.functional,
         )
         
-        print(f"Thickness {thickness}: Generated {len(slabs)} slabs, wrote {written_count}")
-            
-    print(f"\nTotal: {total_generated_slabs} slabs generated")
+        logger.info(f"Thickness {thickness}: generated {len(slabs)} slabs, wrote {written_count}")
+
+    logger.info(f"Total: {total_generated_slabs} slabs generated")
     return 0
 
 

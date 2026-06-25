@@ -6,7 +6,7 @@ from tinykit.presets import available_presets, load_incar_preset
 
 def test_expected_presets_available():
     names = available_presets()
-    for expected in ("adsorb", "slab", "charge"):
+    for expected in ("adsorb", "slab"):
         assert expected in names
 
 
