@@ -42,6 +42,18 @@ def _chdir(path):
         os.chdir(prev)
 
 
+def _prepare_pov_path(output: str) -> str:
+    """Absolute .pov path for `output`, creating its parent directory.
+
+    Absolute so ASE stores an absolute .ini path: the render then runs from that
+    directory (see :func:`_chdir`) and POV-Ray's basename references resolve
+    there. A relative subdir path would otherwise be re-joined onto the new cwd.
+    """
+    pov_path = os.path.abspath(update_image_extension(output))
+    os.makedirs(os.path.dirname(pov_path), exist_ok=True)
+    return pov_path
+
+
 def _set_ini_threads(ini_path, n_threads: int) -> None:
     """Append `Work_Threads=N` to a POV-Ray .ini so it uses all available cores.
 
@@ -293,7 +305,7 @@ def _render_with_geometry(
     ASE applied (for orienting direction vectors like moments).
     """
     from ase.io.utils import rotate
-    pov_path = update_image_extension(output)
+    pov_path = _prepare_pov_path(output)
     rotation_str = array_to_rotation_string(rotation)
     renderer = write(
         pov_path, atoms, format="pov", rotation=rotation_str,
@@ -449,7 +461,7 @@ def render_structure(
     Writes a .pov/.ini pair, renders the image, and (when `cleanup` is True)
     removes the intermediate .pov and .ini files. Returns the image path.
     """
-    pov_path = update_image_extension(output)
+    pov_path = _prepare_pov_path(output)
     rotation_str = array_to_rotation_string(rotation)
 
     renderer = write(
