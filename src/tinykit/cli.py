@@ -11,8 +11,6 @@ import logging
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
-from pymatgen.io.vasp.inputs import Incar, Kpoints
-
 from tinykit.presets import load_incar_preset, available_presets
 
 try:
@@ -20,13 +18,16 @@ try:
 except PackageNotFoundError:  # not installed (e.g. running from a source tree)
     __version__ = "0.0.0"
 
-# Subcommand name -> module providing build_parser/main.
+# Subcommand name -> (module providing build_parser/main, one-line help).
+# The help text is kept here, not read from the module docstring, so that
+# `tk --help` can list the commands without importing any of the heavy tool
+# modules (pymatgen/ase/matplotlib). Only the invoked command is imported.
 SUBCOMMANDS = {
-    "adsorb": "tinykit.adsorb",
-    "slabgen": "tinykit.slabgen",
-    "viz": "tinykit.viz",
-    "stmplot": "tinykit.stmplot",
-    "surfind": "tinykit.surfind",
+    "adsorb": ("tinykit.adsorb", "Generate adsorbate-on-surface structures and VASP inputs."),
+    "slabgen": ("tinykit.slabgen", "Generate surface slabs and write VASP inputs."),
+    "viz": ("tinykit.viz", "Render structures and charge-density isosurfaces with POV-Ray."),
+    "stmplot": ("tinykit.stmplot", "Simulate constant-current STM images from PARCHG/CHGCAR."),
+    "surfind": ("tinykit.surfind", "Find surface-localized states from PROCAR/OUTCAR."),
 }
 
 
@@ -66,6 +67,7 @@ def add_incar_args(parser, default_preset: str):
 def resolve_incar(args):
     """Return an Incar (from --incar file) or a preset dict (from --preset)."""
     if getattr(args, "incar", None):
+        from pymatgen.io.vasp.inputs import Incar
         return Incar.from_file(Path(args.incar).resolve(strict=True))
     return load_incar_preset(args.preset)
 
@@ -90,6 +92,7 @@ def add_kpoints_args(parser, default):
 
 def gamma_kpoints(args):
     """Build a gamma-centered Kpoints object from --kpoints."""
+    from pymatgen.io.vasp.inputs import Kpoints
     return Kpoints.gamma_automatic(tuple(args.kpoints))
 
 
@@ -107,11 +110,16 @@ def add_overwrite_args(parser):
 # Unified `tinykit` dispatcher
 # ---------------------------------------------------------------------------
 
-def main(argv=None):
-    # PYTHON_ARGCOMPLETE_OK
+def _top_parser(eager: bool = False):
+    """Build the top-level `tk` parser.
+
+    By default the subparsers are stubs carrying only the static help text, so
+    listing commands (`tk --help`) imports nothing heavy. With `eager` (used
+    only for shell completion) each tool module is imported and its full parser
+    built, so argcomplete can complete per-command arguments.
+    """
     import argparse
     import importlib
-    import os
 
     parser = argparse.ArgumentParser(
         prog="tk",
@@ -119,30 +127,59 @@ def main(argv=None):
     )
     parser.add_argument("--version", action="version", version=f"tinykit {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True, metavar="<command>")
+    for name, (module_path, help_text) in SUBCOMMANDS.items():
+        sub = subparsers.add_parser(name, help=help_text)
+        if eager:
+            module = importlib.import_module(module_path)
+            module.build_parser(sub)
+            sub.set_defaults(_run=module.main)
+    return parser
 
-    for name, module_path in SUBCOMMANDS.items():
-        module = importlib.import_module(module_path)
-        sub = subparsers.add_parser(name, help=(module.__doc__ or name).strip().splitlines()[0])
-        module.build_parser(sub)
-        sub.set_defaults(_run=module.main)
 
+def _run(args, func):
+    """Run a tool, reporting failures cleanly (TINYKIT_DEBUG=1 for a traceback)."""
+    import os
+    import sys
     try:
-        import argcomplete
-        argcomplete.autocomplete(parser)
-    except ImportError:
-        pass
-
-    args = parser.parse_args(argv)
-    # Uniform error reporting: tools raise on failure; report cleanly here.
-    # Set TINYKIT_DEBUG=1 to get the full traceback instead.
-    try:
-        return args._run(args)
+        return func(args)
     except KeyboardInterrupt:
-        parser.exit(130, "\nInterrupted.\n")
+        sys.stderr.write("\nInterrupted.\n")
+        raise SystemExit(130)
     except Exception as exc:
         if os.environ.get("TINYKIT_DEBUG"):
             raise
-        parser.exit(1, f"Error: {exc}\n")
+        sys.stderr.write(f"Error: {exc}\n")
+        raise SystemExit(1)
+
+
+def main(argv=None):
+    # PYTHON_ARGCOMPLETE_OK
+    import importlib
+    import os
+    import sys
+
+    argv = list(sys.argv[1:] if argv is None else argv)
+    completing = "_ARGCOMPLETE" in os.environ
+    command = next((a for a in argv if not a.startswith("-")), None)
+
+    # Fast path: a known command is on the line, so import only that module and
+    # dispatch. This skips the other tools' heavy imports (the whole point).
+    if command in SUBCOMMANDS and not completing:
+        module = importlib.import_module(SUBCOMMANDS[command][0])
+        sub = module.build_parser()
+        sub.prog = f"tk {command}"
+        rest = argv[argv.index(command) + 1:]
+        return _run(sub.parse_args(rest), module.main)
+
+    # Listing / help / version / unknown-command / completion path. No heavy
+    # imports unless completion needs the full parser.
+    parser = _top_parser(eager=completing)
+    if completing:
+        import argcomplete
+        argcomplete.autocomplete(parser)
+    args = parser.parse_args(argv)
+    # Only reachable here for a real command during completion fallback.
+    return _run(args, args._run)
 
 
 if __name__ == "__main__":

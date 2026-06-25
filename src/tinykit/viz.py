@@ -1,22 +1,13 @@
 #!/usr/bin/env python
 """Render structures (slabs or bulk) and charge-density isosurfaces with POV-Ray."""
 import argparse
-import os
 
-import numpy as np
-import yaml
-from ase.io import read
-
-from tinykit.povray import (
-    resolve_atom_styles, render_structure, render_structure_with_bonds,
-    render_structure_with_moments, add_render_args, povray_settings_from_args,
-    parse_rgb,
-)
-from tinykit.chgcar import (
-    is_chgcar_input, load_density, prepare_density, build_isosurface_data,
-)
-from tinykit.magviz import get_moment_vectors
 from tinykit.cli import get_logger
+# add_render_args is the only povray symbol build_parser needs; it pulls in
+# numpy + ase.io. The heavier imports (ase reader, pymatgen via magviz, the
+# render functions, the chgcar helpers) are deferred into main() so that
+# `tk viz --help` and tab-completion stay cheap.
+from tinykit.povray import add_render_args
 
 logger = get_logger(__name__)
 
@@ -98,6 +89,21 @@ def build_parser(parser=None):
 
 
 def main(args=None):
+    import os
+
+    import numpy as np
+    import yaml
+    from ase.io import read
+
+    from tinykit.povray import (
+        resolve_atom_styles, render_structure, render_structure_with_bonds,
+        render_structure_with_moments, povray_settings_from_args, parse_rgb,
+    )
+    from tinykit.chgcar import (
+        is_chgcar_input, load_density, prepare_density, build_isosurface_data,
+    )
+    from tinykit.magviz import get_moment_vectors
+
     if not isinstance(args, argparse.Namespace):
         args = build_parser().parse_args(args)
 

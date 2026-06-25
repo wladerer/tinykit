@@ -7,20 +7,29 @@ from tinykit import cli
 
 
 def test_every_subcommand_builds_a_parser():
-    for name, module_path in cli.SUBCOMMANDS.items():
+    for name, (module_path, help_text) in cli.SUBCOMMANDS.items():
         module = importlib.import_module(module_path)
         assert hasattr(module, "build_parser"), f"{name} missing build_parser"
         assert hasattr(module, "main"), f"{name} missing main"
         parser = module.build_parser()  # parser=None -> standalone ArgumentParser
         assert parser is not None
+        assert help_text  # a static one-liner is registered for `tk --help`
 
 
-def test_dispatcher_assembles_all_subparsers():
-    # --version forces a clean SystemExit only after every subparser is built,
-    # so this exercises importing + build_parser for the whole tool set.
+def test_version_exits_clean():
     with pytest.raises(SystemExit) as exc:
         cli.main(["--version"])
     assert exc.value.code == 0
+
+
+def test_help_lists_commands_lazily(capsys):
+    # `tk --help` must list every command without importing the tool modules.
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["--help"])
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    for name in cli.SUBCOMMANDS:
+        assert name in out
 
 
 def test_version_is_single_sourced():
