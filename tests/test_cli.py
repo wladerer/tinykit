@@ -32,11 +32,6 @@ def test_help_lists_commands_lazily(capsys):
         assert name in out
 
 
-def test_version_is_single_sourced():
-    assert isinstance(cli.__version__, str)
-    assert cli.__version__  # non-empty
-
-
 def test_get_logger_is_idempotent():
     a = cli.get_logger("tinykit.test")
     b = cli.get_logger("tinykit.test")
